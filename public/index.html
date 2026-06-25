@@ -559,12 +559,35 @@ table.leads-table tr:hover td{background:#fafafa}
           <div id="wa-connection-status" style="margin-bottom:20px">
             <div style="font-size:13px;color:var(--gray)">A carregar...</div>
           </div>
-          <button onclick="launchEmbeddedSignup()" id="btn-wa-connect"
-            style="background:#1877F2;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>
-            Conectar com Facebook / Meta
-          </button>
-          <div style="font-size:12px;color:var(--gray);margin-top:10px">O cliente faz login na Meta e autoriza o acesso — os dados são guardados automaticamente.</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Phone Number ID</div>
+              <input type="text" id="wa-input-phone-id" placeholder="Ex: 123456789012345"
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">WABA ID</div>
+              <input type="text" id="wa-input-waba-id" placeholder="Ex: 987654321098765"
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            </div>
+            <div style="grid-column:1/-1">
+              <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Access Token (System User)</div>
+              <input type="text" id="wa-input-token" placeholder="EAAxxxxxxxx..."
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Número de Telefone (opcional)</div>
+              <input type="text" id="wa-input-phone-number" placeholder="Ex: +351912345678"
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Nome Verificado (opcional)</div>
+              <input type="text" id="wa-input-verified-name" placeholder="Ex: Empresa Lda"
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            </div>
+          </div>
+          <button onclick="saveWaCredentials()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:11px 24px;font-size:14px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Guardar Credenciais</button>
+          <div style="font-size:12px;color:var(--gray);margin-top:10px">Obtém os dados no Meta Business Suite → Configurações → Utilizadores do Sistema.</div>
           <div id="wa-connect-msg" style="font-size:13px;margin-top:12px;min-height:18px"></div>
         </div>
 
@@ -713,14 +736,9 @@ table.leads-table tr:hover td{background:#fafafa}
         </div>
         <div id="wp-status-bar" style="margin-bottom:20px"><div class="loading" style="padding:16px">A carregar...</div></div>
 
-        <!-- Botão conectar -->
+        <!-- Formulário credenciais cliente -->
         <div id="wp-connect-section">
-          <button onclick="launchEmbeddedSignupClient()" id="btn-wp-connect"
-            style="background:#1877F2;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>
-            Conectar conta WhatsApp Business
-          </button>
-          <div style="font-size:12px;color:var(--gray);margin-top:8px">Faz login com o Facebook da empresa para ligar a tua conta WhatsApp Business.</div>
+          <div style="font-size:13px;color:var(--gray);margin-bottom:14px">A tua conta WhatsApp ainda não está configurada. Contacta o administrador para ligar a tua conta.</div>
           <div id="wp-connect-msg" style="font-size:13px;margin-top:10px;min-height:18px"></div>
         </div>
       </div>
@@ -2541,38 +2559,7 @@ async function loadClientTemplates() {
 }
 
 function launchEmbeddedSignupClient() {
-  if (!activeCompany) { alert('Selecciona uma empresa primeiro'); return }
-  const msg = document.getElementById('wp-connect-msg')
-
-  FB.login(function(response) {
-    if (response.authResponse) {
-      const code        = response.authResponse.code
-      const redirectUri = window.location.origin + window.location.pathname
-      msg.style.color   = 'var(--gray)'; msg.textContent = 'A conectar conta Meta...'
-
-      fetch(`${SUPABASE_URL}/functions/v1/meta-connect`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'exchange_code', code, company_id: activeCompany.id, redirect_uri: redirectUri })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.error) {
-          msg.style.color = 'var(--red)'; msg.textContent = 'Erro: ' + data.error
-        } else {
-          msg.style.color = 'var(--green)'
-          msg.textContent = `✓ Conta conectada! ${data.verified_name} (${data.phone_number})`
-          setTimeout(() => loadWhatsappPage(), 1500)
-        }
-      })
-      .catch(() => { msg.style.color = 'var(--red)'; msg.textContent = 'Erro de ligação' })
-    }
-  }, {
-    scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management',
-    response_type: 'code',
-    override_default_response_type: true,
-    extras: { feature: 'whatsapp_embedded_signup', setup: {} }
-  })
+  // Não disponível — conta configurada pelo administrador
 }
 
 function openNewTemplateModalClient() {
@@ -2672,40 +2659,42 @@ async function loadWaConfig() {
   }
 }
 
-function launchEmbeddedSignup() {
+async function saveWaCredentials() {
   const companyId = document.getElementById('wa-company-select')?.value
   if (!companyId) { alert('Selecciona uma empresa primeiro'); return }
+  const msg = document.getElementById('wa-connect-msg')
 
-  FB.login(function(response) {
-    if (response.authResponse) {
-      const code        = response.authResponse.code
-      const redirectUri = window.location.origin + window.location.pathname
-      const msg         = document.getElementById('wa-connect-msg')
-      msg.style.color   = 'var(--gray)'; msg.textContent = 'A conectar conta Meta...'
+  const phoneId     = document.getElementById('wa-input-phone-id').value.trim()
+  const wabaId      = document.getElementById('wa-input-waba-id').value.trim()
+  const token       = document.getElementById('wa-input-token').value.trim()
+  const phoneNumber = document.getElementById('wa-input-phone-number').value.trim()
+  const verifiedName= document.getElementById('wa-input-verified-name').value.trim()
 
-      fetch(`${SUPABASE_URL}/functions/v1/meta-connect`, {
-        method: 'POST',
-        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'exchange_code', code, company_id: companyId, redirect_uri: redirectUri })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.error) {
-          msg.style.color = 'var(--red)'; msg.textContent = 'Erro: ' + data.error
-        } else {
-          msg.style.color = 'var(--green)'
-          msg.textContent = `✓ Conectado! ${data.verified_name} (${data.phone_number})`
-          loadWaConfig()
-        }
-      })
-      .catch(() => { msg.style.color = 'var(--red)'; msg.textContent = 'Erro de ligação' })
-    }
-  }, {
-    scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management',
-    response_type: 'code',
-    override_default_response_type: true,
-    extras: { feature: 'whatsapp_embedded_signup', setup: {} }
-  })
+  if (!phoneId || !wabaId || !token) {
+    msg.style.color = 'var(--red)'; msg.textContent = 'Phone Number ID, WABA ID e Access Token são obrigatórios.'
+    return
+  }
+
+  msg.style.color = 'var(--gray)'; msg.textContent = 'A guardar...'
+
+  const { error } = await sb.from('companies').update({
+    wa_phone_id:      phoneId,
+    wa_waba_id:       wabaId,
+    wa_token:         token,
+    wa_phone_number:  phoneNumber || null,
+    wa_verified_name: verifiedName || null,
+  }).eq('id', companyId)
+
+  if (error) {
+    msg.style.color = 'var(--red)'; msg.textContent = 'Erro: ' + error.message
+  } else {
+    msg.style.color = 'var(--green)'; msg.textContent = '✓ Credenciais guardadas com sucesso!'
+    setTimeout(() => loadWaConfig(), 1000)
+  }
+}
+
+function launchEmbeddedSignup() {
+  // Embedded Signup requer estatuto BSP/TP — usar formulário manual acima
 }
 
 async function saveVerifyToken() {
