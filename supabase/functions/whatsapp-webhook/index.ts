@@ -16,7 +16,13 @@ serve(async (req) => {
     const challenge = url.searchParams.get('hub.challenge')
 
     if (mode === 'subscribe') {
-      // Verificar contra todos os verify_tokens das empresas
+      // Verificar contra token global (env var)
+      const globalToken = Deno.env.get('WEBHOOK_VERIFY_TOKEN')
+      if (globalToken && token === globalToken) {
+        return new Response(challenge, { status: 200 })
+      }
+
+      // Verificar contra tokens das empresas
       const { data: companies } = await sb
         .from('companies')
         .select('id, wa_verify_token')
