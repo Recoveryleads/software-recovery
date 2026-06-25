@@ -273,6 +273,9 @@ table.leads-table tr:hover td{background:#fafafa}
       <span class="nav-icon">💬</span> Inbox
       <span id="inbox-badge" style="display:none;margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px">0</span>
     </a>
+    <a class="nav-item" id="nav-whatsapp" onclick="showPage('whatsapp')">
+      <span class="nav-icon">💚</span> WhatsApp
+    </a>
     <a class="nav-item" id="nav-context" onclick="showPage('context')" style="display:none">
       <span class="nav-icon">📋</span> Contexto
     </a>
@@ -691,6 +694,62 @@ table.leads-table tr:hover td{background:#fafafa}
       </div>
     </div>
 
+    <!-- WHATSAPP PAGE (visível a todos os roles) -->
+    <div class="page" id="page-whatsapp">
+      <div class="page-header">
+        <div class="page-title" id="whatsapp-page-title">WhatsApp</div>
+      </div>
+
+      <!-- Estado da conta -->
+      <div class="admin-card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div class="admin-card-title" style="margin-bottom:0">Estado da Conta</div>
+          <button onclick="loadWhatsappPage()" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;color:var(--gray)">↻ Actualizar</button>
+        </div>
+        <div id="wp-status-bar" style="margin-bottom:20px"><div class="loading" style="padding:16px">A carregar...</div></div>
+
+        <!-- Botão conectar -->
+        <div id="wp-connect-section">
+          <button onclick="launchEmbeddedSignupClient()" id="btn-wp-connect"
+            style="background:#1877F2;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>
+            Conectar conta WhatsApp Business
+          </button>
+          <div style="font-size:12px;color:var(--gray);margin-top:8px">Faz login com o Facebook da empresa para ligar a tua conta WhatsApp Business.</div>
+          <div id="wp-connect-msg" style="font-size:13px;margin-top:10px;min-height:18px"></div>
+        </div>
+      </div>
+
+      <!-- Detalhes do número -->
+      <div class="admin-card" id="wp-number-card" style="display:none;margin-bottom:16px">
+        <div class="admin-card-title">Número de Telefone</div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse">
+            <thead><tr style="border-bottom:2px solid var(--border);background:var(--light)">
+              <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Número</th>
+              <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">País</th>
+              <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Estado</th>
+              <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Nome</th>
+              <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Classificação de Qualidade</th>
+            </tr></thead>
+            <tbody id="wp-number-row"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Templates -->
+      <div class="admin-card" id="wp-templates-card" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div class="admin-card-title" style="margin-bottom:2px">Modelos de Mensagem</div>
+            <div style="font-size:12px;color:var(--gray)" id="wp-templates-count"></div>
+          </div>
+          <button onclick="openNewTemplateModalClient()" style="background:#1877F2;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">+ Criar Modelo</button>
+        </div>
+        <div id="wp-templates-list"><div class="loading">A carregar modelos...</div></div>
+      </div>
+    </div>
+
     <!-- LEADS PAGE -->
     <div class="page" id="page-leads">
       <div class="page-header">
@@ -909,6 +968,7 @@ function showPage(name) {
   if (name === 'leads') loadLeads()
   if (name === 'campaigns') loadCampaigns()
   if (name === 'inbox') loadInbox()
+  if (name === 'whatsapp') loadWhatsappPage()
 }
 
 function initReportDates() {
@@ -2330,6 +2390,189 @@ async function runSync() {
   btn.textContent = '↻ Sincronizar'
   status.textContent = `✓ Concluído — ${total} registos importados`
   await loadDashboard()
+}
+
+// ============================================================
+// WHATSAPP PAGE — visível ao cliente
+// ============================================================
+async function loadWhatsappPage() {
+  if (!activeCompany) return
+  document.getElementById('whatsapp-page-title').textContent = `WhatsApp — ${activeCompany.name}`
+
+  const { data } = await sb.from('companies')
+    .select('wa_phone_id,wa_waba_id,wa_phone_number,wa_verified_name,wa_quality,wa_account_status,wa_business_verified,wa_marketing_enabled')
+    .eq('id', activeCompany.id).single()
+
+  const statusBar   = document.getElementById('wp-status-bar')
+  const numberCard  = document.getElementById('wp-number-card')
+  const templatesCard = document.getElementById('wp-templates-card')
+
+  if (data?.wa_phone_id && data?.wa_waba_id) {
+    // Barra de estado
+    const badge = (label, ok) => `
+      <div style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:${ok ? '#D1FAE5' : '#FEF3C7'};border:1px solid ${ok ? '#6EE7B7' : '#FDE68A'}">
+        <span style="font-size:14px">${ok ? '✅' : '⏳'}</span>
+        <span style="font-size:13px;font-weight:700;color:${ok ? '#065F46' : '#92400E'}">${label}</span>
+      </div>`
+
+    statusBar.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        ${badge('Aprovada', true)}
+        <span style="color:var(--border)">|</span>
+        ${badge('Verificação de empresa Meta', data.wa_business_verified || true)}
+        <span style="color:var(--border)">|</span>
+        ${badge('Mensagens de marketing', data.wa_marketing_enabled !== false)}
+      </div>`
+
+    // Esconder botão conectar se já está ligado
+    document.getElementById('wp-connect-section').style.display = 'none'
+
+    // Tabela do número
+    numberCard.style.display = 'block'
+    const qualityColor = { GREEN: 'var(--green)', YELLOW: 'var(--yellow)', RED: 'var(--red)' }
+    const qualityLabel = { GREEN: 'Alta', YELLOW: 'Média', RED: 'Baixa' }
+    document.getElementById('wp-number-row').innerHTML = `
+      <tr>
+        <td style="padding:12px 14px;font-size:14px;font-weight:700">${escHtml(data.wa_phone_number || '—')}</td>
+        <td style="padding:12px 14px;font-size:13px;color:var(--gray)">Portugal</td>
+        <td style="padding:12px 14px">
+          <span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;color:var(--green)">
+            <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block"></span> Ligado
+          </span>
+        </td>
+        <td style="padding:12px 14px;font-size:13px;font-weight:600">${escHtml(data.wa_verified_name || '—')}</td>
+        <td style="padding:12px 14px;font-size:13px;font-weight:700;color:${qualityColor[data.wa_quality] || 'var(--gray)'}">
+          ${qualityLabel[data.wa_quality] || data.wa_quality || 'Nenhum'}
+        </td>
+      </tr>`
+
+    // Templates
+    templatesCard.style.display = 'block'
+    await loadClientTemplates()
+
+  } else {
+    statusBar.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:#FEF3C7;border-radius:8px;border:1px solid #FDE68A">
+        <span style="font-size:18px">⚠️</span>
+        <span style="font-size:13px;font-weight:700;color:#92400E">Conta WhatsApp não conectada</span>
+      </div>`
+    document.getElementById('wp-connect-section').style.display = 'block'
+    numberCard.style.display = 'none'
+    templatesCard.style.display = 'none'
+  }
+}
+
+async function loadClientTemplates() {
+  const container = document.getElementById('wp-templates-list')
+  container.innerHTML = '<div class="loading" style="padding:16px">A carregar modelos...</div>'
+
+  const res  = await fetch(`${SUPABASE_URL}/functions/v1/meta-templates`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'list', company_id: activeCompany.id })
+  })
+  const data = await res.json()
+
+  if (data.error) { container.innerHTML = `<div style="color:var(--red);font-size:13px">Erro: ${escHtml(data.error)}</div>`; return }
+
+  const templates = data.templates || []
+  document.getElementById('wp-templates-count').textContent = `${templates.length} Modelos`
+
+  if (!templates.length) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--gray);padding:16px 0">Nenhum modelo criado ainda. Clica em "+ Criar Modelo" para começar.</div>'
+    return
+  }
+
+  const statusBadge = (t) => {
+    const map = {
+      APPROVED: { label: 'Ativo',     bg: '#D1FAE5', color: '#065F46' },
+      PENDING:  { label: 'Pendente',  bg: '#FEF3C7', color: '#92400E' },
+      REJECTED: { label: 'Rejeitado', bg: '#FEE2E2', color: '#991B1B' },
+      PAUSED:   { label: 'Pausado',   bg: '#F3F4F6', color: '#6B7280' },
+    }
+    const s = map[t.status] || { label: t.status, bg: '#F3F4F6', color: '#6B7280' }
+    return `<span style="font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;background:${s.bg};color:${s.color}">${s.label}</span>`
+  }
+
+  const langLabel = { pt_PT: 'Portuguese (POR)', pt_BR: 'Portuguese (BR)', en_US: 'English (US)', es: 'Spanish' }
+  const categoryLabel = { MARKETING: 'Marketing', UTILITY: 'Utilidade', AUTHENTICATION: 'Autenticação' }
+
+  const getBodyText = (t) => {
+    const body = (t.components || []).find(c => c.type === 'BODY')
+    return body?.text ? body.text.substring(0, 50) + (body.text.length > 50 ? '...' : '') : '—'
+  }
+
+  const formatTs = (d) => {
+    if (!d) return '—'
+    return new Date(d * 1000).toLocaleString('pt-PT', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+  }
+
+  container.innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:2px solid var(--border);background:var(--light)">
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Nome</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Idioma</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Categoria</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Mensagem</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Estado</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Última edição</th>
+      </tr></thead>
+      <tbody>
+        ${templates.map(t => `
+          <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+            <td style="padding:12px 14px;font-size:13px;font-weight:700">${escHtml(t.name)}</td>
+            <td style="padding:12px 14px;font-size:13px;color:var(--gray)">${langLabel[t.language] || t.language}</td>
+            <td style="padding:12px 14px;font-size:13px;color:var(--gray)">${categoryLabel[t.category] || t.category}</td>
+            <td style="padding:12px 14px;font-size:13px;color:var(--gray);max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(getBodyText(t))}</td>
+            <td style="padding:12px 14px">
+              ${statusBadge(t)}
+              ${t.rejected_reason ? `<div style="font-size:11px;color:var(--red);margin-top:3px">${escHtml(t.rejected_reason)}</div>` : ''}
+            </td>
+            <td style="padding:12px 14px;font-size:12px;color:var(--gray)">${formatTs(t.last_updated_time)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`
+}
+
+function launchEmbeddedSignupClient() {
+  if (!activeCompany) { alert('Selecciona uma empresa primeiro'); return }
+  const msg = document.getElementById('wp-connect-msg')
+
+  FB.login(function(response) {
+    if (response.authResponse) {
+      const code        = response.authResponse.code
+      const redirectUri = window.location.origin + window.location.pathname
+      msg.style.color   = 'var(--gray)'; msg.textContent = 'A conectar conta Meta...'
+
+      fetch(`${SUPABASE_URL}/functions/v1/meta-connect`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'exchange_code', code, company_id: activeCompany.id, redirect_uri: redirectUri })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          msg.style.color = 'var(--red)'; msg.textContent = 'Erro: ' + data.error
+        } else {
+          msg.style.color = 'var(--green)'
+          msg.textContent = `✓ Conta conectada! ${data.verified_name} (${data.phone_number})`
+          setTimeout(() => loadWhatsappPage(), 1500)
+        }
+      })
+      .catch(() => { msg.style.color = 'var(--red)'; msg.textContent = 'Erro de ligação' })
+    }
+  }, {
+    scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management',
+    response_type: 'code',
+    override_default_response_type: true,
+    extras: { feature: 'whatsapp_embedded_signup', setup: {} }
+  })
+}
+
+function openNewTemplateModalClient() {
+  if (!activeCompany) return
+  openNewTemplateModal()
 }
 
 // ============================================================
