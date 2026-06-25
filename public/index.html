@@ -2366,38 +2366,64 @@ async function loadWaConfig() {
   if (!companyId) return
 
   const { data } = await sb.from('companies')
-    .select('wa_phone_id,wa_waba_id,wa_phone_number,wa_verified_name,wa_quality,wa_verify_token')
+    .select('wa_phone_id,wa_waba_id,wa_phone_number,wa_verified_name,wa_quality,wa_verify_token,wa_account_status,wa_business_verified,wa_marketing_enabled')
     .eq('id', companyId).single()
 
   const statusEl  = document.getElementById('wa-connection-status')
   const detailsEl = document.getElementById('wa-account-details')
 
   if (data?.wa_phone_id && data?.wa_waba_id) {
-    // Conta conectada
-    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--green)"></div><span style="font-size:14px;font-weight:700;color:var(--green)">Conta conectada</span></div>`
+    // Barra de estado tipo GHL
+    const badge = (label, ok) => `
+      <div style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;background:${ok ? '#D1FAE5' : '#FEF3C7'};border:1px solid ${ok ? '#6EE7B7' : '#FDE68A'}">
+        <span style="font-size:14px">${ok ? '✅' : '⏳'}</span>
+        <span style="font-size:13px;font-weight:700;color:${ok ? '#065F46' : '#92400E'}">${label}</span>
+      </div>`
+
+    statusEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        ${badge('Aprovada', data.wa_account_status === 'APPROVED' || data.wa_phone_id)}
+        <span style="color:var(--border)">|</span>
+        ${badge('Verificação Meta', data.wa_business_verified || data.wa_phone_id)}
+        <span style="color:var(--border)">|</span>
+        ${badge('Mensagens de marketing', data.wa_marketing_enabled !== false)}
+      </div>`
+
     detailsEl.style.display = 'block'
+
+    const qualityColor = { GREEN: 'var(--green)', YELLOW: 'var(--yellow)', RED: 'var(--red)' }
+    const qualityLabel = { GREEN: 'Alta', YELLOW: 'Média', RED: 'Baixa' }
+
     document.getElementById('wa-account-grid').innerHTML = `
-      <div style="background:var(--light);border-radius:8px;padding:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Nome Verificado</div>
-        <div style="font-size:15px;font-weight:700">${escHtml(data.wa_verified_name || '—')}</div>
+      <div style="background:var(--light);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Número de Telefone</div>
+        <div style="font-size:16px;font-weight:800">${escHtml(data.wa_phone_number || '—')}</div>
+        <div style="font-size:12px;color:var(--green);font-weight:700;margin-top:4px">✅ Ligado</div>
       </div>
-      <div style="background:var(--light);border-radius:8px;padding:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Número</div>
-        <div style="font-size:15px;font-weight:700">${escHtml(data.wa_phone_number || '—')}</div>
+      <div style="background:var(--light);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Nome Verificado</div>
+        <div style="font-size:16px;font-weight:800">${escHtml(data.wa_verified_name || '—')}</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:4px">Portugal</div>
       </div>
-      <div style="background:var(--light);border-radius:8px;padding:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Phone Number ID</div>
-        <div style="font-size:12px;font-family:monospace;color:var(--gray)">${escHtml(data.wa_phone_id)}</div>
+      <div style="background:var(--light);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Classificação de Qualidade</div>
+        <div style="font-size:16px;font-weight:800;color:${qualityColor[data.wa_quality] || 'var(--gray)'}">
+          ${qualityLabel[data.wa_quality] || data.wa_quality || 'Nenhum'}
+        </div>
       </div>
-      <div style="background:var(--light);border-radius:8px;padding:12px">
-        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Qualidade</div>
-        <div style="font-size:15px;font-weight:700;color:${data.wa_quality === 'GREEN' ? 'var(--green)' : data.wa_quality === 'YELLOW' ? 'var(--yellow)' : 'var(--red)'}">${data.wa_quality || '—'}</div>
+      <div style="background:var(--light);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Phone Number ID</div>
+        <div style="font-size:12px;font-family:monospace;color:var(--gray);word-break:break-all">${escHtml(data.wa_phone_id)}</div>
       </div>
     `
     document.getElementById('wa-verify-token').value = data.wa_verify_token || ''
     await loadTemplates()
   } else {
-    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--gray)"></div><span style="font-size:14px;color:var(--gray)">Não conectado</span></div>`
+    statusEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--light);border-radius:8px;border:1px solid var(--border)">
+        <div style="width:10px;height:10px;border-radius:50%;background:var(--gray)"></div>
+        <span style="font-size:14px;color:var(--gray)">Conta não conectada — clica no botão abaixo para ligar</span>
+      </div>`
     detailsEl.style.display = 'none'
     document.getElementById('templates-list').innerHTML = '<div style="font-size:13px;color:var(--gray)">Conecta uma conta WhatsApp primeiro.</div>'
   }
@@ -2476,33 +2502,56 @@ async function loadTemplates() {
   const templates = data.templates || []
   if (!templates.length) { container.innerHTML = '<div style="font-size:13px;color:var(--gray)">Nenhum template criado ainda.</div>'; return }
 
-  const statusIcon  = { APPROVED: '✅', PENDING: '⏳', REJECTED: '❌', PAUSED: '⏸' }
-  const statusColor = { APPROVED: 'var(--green)', PENDING: 'var(--yellow)', REJECTED: 'var(--red)', PAUSED: 'var(--gray)' }
+  const statusBadge = (t) => {
+    const map = {
+      APPROVED: { label: 'Ativo',     bg: '#D1FAE5', color: '#065F46' },
+      PENDING:  { label: 'Pendente',  bg: '#FEF3C7', color: '#92400E' },
+      REJECTED: { label: 'Rejeitado', bg: '#FEE2E2', color: '#991B1B' },
+      PAUSED:   { label: 'Pausado',   bg: '#F3F4F6', color: '#6B7280' },
+    }
+    const s = map[t.status] || { label: t.status, bg: '#F3F4F6', color: '#6B7280' }
+    return `<span style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:${s.bg};color:${s.color}">${s.label}</span>`
+  }
+
   const categoryLabel = { MARKETING: 'Marketing', UTILITY: 'Utilidade', AUTHENTICATION: 'Autenticação' }
+  const langLabel = { pt_PT: 'Portuguese (POR)', pt_BR: 'Portuguese (BR)', en_US: 'English (US)', es: 'Spanish' }
+
+  const getBodyText = (t) => {
+    const body = (t.components || []).find(c => c.type === 'BODY')
+    return body?.text ? body.text.substring(0, 40) + (body.text.length > 40 ? '...' : '') : '—'
+  }
+
+  const formatDate = (d) => {
+    if (!d) return '—'
+    return new Date(d * 1000).toLocaleString('pt-PT', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+  }
 
   container.innerHTML = `
+    <div style="font-size:13px;color:var(--gray);margin-bottom:12px">Modelos de Mensagem de Negócio · <strong>${templates.length} Modelos</strong></div>
     <table style="width:100%;border-collapse:collapse">
-      <thead><tr style="border-bottom:1px solid var(--border)">
-        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Nome</th>
-        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Categoria</th>
-        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Idioma</th>
-        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Estado</th>
-        <th style="padding:8px 12px"></th>
+      <thead><tr style="border-bottom:2px solid var(--border);background:var(--light)">
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Nome</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Idioma</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Categoria</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Mensagem</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Estado</th>
+        <th style="text-align:left;padding:10px 14px;font-size:12px;font-weight:700;color:var(--gray)">Última edição</th>
+        <th style="padding:10px 14px"></th>
       </tr></thead>
       <tbody>
         ${templates.map(t => `
-          <tr style="border-bottom:1px solid var(--border)">
-            <td style="padding:10px 12px;font-size:13px;font-weight:700;font-family:monospace">${escHtml(t.name)}</td>
-            <td style="padding:10px 12px;font-size:12px;color:var(--gray)">${categoryLabel[t.category] || t.category}</td>
-            <td style="padding:10px 12px;font-size:12px;color:var(--gray)">${escHtml(t.language)}</td>
-            <td style="padding:10px 12px">
-              <span style="font-size:13px;font-weight:700;color:${statusColor[t.status] || 'var(--gray)'}">
-                ${statusIcon[t.status] || ''} ${t.status}
-              </span>
-              ${t.rejected_reason ? `<div style="font-size:11px;color:var(--red);margin-top:2px">${escHtml(t.rejected_reason)}</div>` : ''}
+          <tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+            <td style="padding:12px 14px;font-size:13px;font-weight:700;color:#111">${escHtml(t.name)}</td>
+            <td style="padding:12px 14px;font-size:13px;color:var(--gray)">${langLabel[t.language] || t.language}</td>
+            <td style="padding:12px 14px;font-size:13px;color:var(--gray)">${categoryLabel[t.category] || t.category}</td>
+            <td style="padding:12px 14px;font-size:13px;color:var(--gray);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(getBodyText(t))}</td>
+            <td style="padding:12px 14px">
+              ${statusBadge(t)}
+              ${t.rejected_reason ? `<div style="font-size:11px;color:var(--red);margin-top:3px">${escHtml(t.rejected_reason)}</div>` : ''}
             </td>
-            <td style="padding:10px 12px;text-align:right">
-              <button onclick="deleteTemplate('${escHtml(t.name)}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+            <td style="padding:12px 14px;font-size:12px;color:var(--gray)">${formatDate(t.last_updated_time)}</td>
+            <td style="padding:12px 14px;text-align:right">
+              <button onclick="deleteTemplate('${escHtml(t.name)}')" style="background:none;border:none;color:var(--gray);cursor:pointer;font-size:18px;padding:2px 6px;border-radius:4px" title="Apagar">⋯</button>
             </td>
           </tr>
         `).join('')}
