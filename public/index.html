@@ -1,0 +1,2915 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recovery Leads — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gold:#F5A623;--gold-dark:#d4880a;--gold-light:#fff8eb;
+  --navy:#0F1623;--navy2:#1A2436;--navy3:#243050;
+  --gray:#6B7280;--light:#F3F4F6;--border:#E5E7EB;--white:#ffffff;
+  --green:#10B981;--red:#EF4444;--blue:#3B82F6;--yellow:#F59E0B;
+}
+html{height:100%}
+body{font-family:'Barlow',sans-serif;height:100%;background:var(--light);color:#111;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font-family:'Barlow',sans-serif}
+input,select{font-family:'Barlow',sans-serif}
+
+/* ── LOGIN ── */
+#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--navy)}
+.login-box{background:var(--navy2);border:1px solid var(--navy3);border-radius:16px;padding:48px 40px;width:100%;max-width:400px;text-align:center}
+.login-logo{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:var(--white);letter-spacing:1px;margin-bottom:8px}
+.login-logo span{color:var(--gold)}
+.login-sub{font-size:13px;color:var(--gray);margin-bottom:32px}
+.login-box input{width:100%;background:var(--navy3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;color:var(--white);font-size:14px;margin-bottom:12px;outline:none;transition:border 0.2s}
+.login-box input:focus{border-color:var(--gold)}
+.login-box input::placeholder{color:var(--gray)}
+.btn-login{width:100%;background:var(--gold);color:var(--navy);font-weight:800;font-size:15px;padding:13px;border:none;border-radius:8px;margin-top:4px;transition:background 0.2s}
+.btn-login:hover{background:var(--gold-dark)}
+.login-error{color:var(--red);font-size:13px;margin-top:12px;min-height:18px}
+
+/* ── APP LAYOUT ── */
+#app{display:none;height:100vh}
+.app-layout{display:flex;height:100vh;overflow:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{width:240px;min-width:240px;background:var(--navy);display:flex;flex-direction:column;padding:24px 0;overflow-y:auto}
+.sidebar-logo{padding:0 20px 24px;border-bottom:1px solid var(--navy3)}
+.sidebar-logo-text{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--white)}
+.sidebar-logo-text span{color:var(--gold)}
+.sidebar-logo-sub{font-size:11px;color:var(--gray);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.sidebar-section{padding:20px 20px 8px;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--gray)}
+.sidebar-select{margin:0 16px 16px;background:var(--navy2);border:1px solid var(--navy3);border-radius:8px;padding:9px 12px;color:var(--white);font-size:13px;font-weight:600;width:calc(100% - 32px);outline:none;cursor:pointer}
+.sidebar-select:focus{border-color:var(--gold)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,0.6);font-size:14px;font-weight:500;cursor:pointer;transition:all 0.15s;border-radius:0;text-decoration:none}
+.nav-item:hover{color:var(--white);background:var(--navy2)}
+.nav-item.active{color:var(--gold);background:var(--navy2);font-weight:700}
+.nav-icon{font-size:16px;width:20px;text-align:center}
+.sidebar-bottom{margin-top:auto;padding:16px 20px;border-top:1px solid var(--navy3)}
+.sidebar-user-name{font-size:13px;font-weight:700;color:var(--white)}
+.sidebar-user-role{font-size:11px;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
+.btn-logout{width:100%;background:transparent;border:1px solid var(--navy3);color:var(--gray);font-size:12px;font-weight:600;padding:8px;border-radius:6px;transition:all 0.15s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* ── MAIN CONTENT ── */
+.main-content{flex:1;overflow-y:auto;padding:32px}
+.page{display:none}
+.page.active{display:block}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:gap}
+.page-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#111;letter-spacing:-0.5px}
+.period-tabs{display:flex;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px;gap:2px}
+.period-tab{padding:7px 16px;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--gray);border-radius:7px;transition:all 0.15s}
+.period-tab.active{background:var(--navy);color:var(--white)}
+.period-tab:hover:not(.active){background:var(--light);color:#111}
+.date-nav{display:flex;align-items:center;background:var(--white);border:1px solid var(--border);border-radius:10px;padding:4px 8px;gap:6px;margin-left:8px}
+.date-nav-arrow{background:transparent;border:none;font-size:16px;color:var(--gray);padding:2px 6px;border-radius:6px;line-height:1;transition:all 0.15s}
+.date-nav-arrow:hover{background:var(--light);color:#111}
+.date-nav-label{font-size:13px;font-weight:700;color:#111;min-width:90px;text-align:center;cursor:pointer}
+.date-nav-label:hover{color:var(--gold)}
+#custom-date{display:none}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.blue::before{background:var(--blue)}
+.stat-card.green::before{background:var(--green)}
+.stat-card.red::before{background:var(--red)}
+.stat-label{font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.stat-value{font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:#111;line-height:1}
+.stat-sub{font-size:12px;color:var(--gray);margin-top:6px}
+
+/* ── RATES GRID ── */
+.rates-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.rate-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+.rate-label{font-size:13px;color:var(--gray);font-weight:500}
+.rate-value{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900}
+.rate-value.green{color:var(--green)}
+.rate-value.yellow{color:var(--yellow)}
+.rate-value.red{color:var(--red)}
+
+/* ── CONTACTS TABLE ── */
+.contacts-table-wrap{background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:28px}
+.contacts-table-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.contacts-search{border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;outline:none;width:220px;transition:border 0.15s}
+.contacts-search:focus{border-color:var(--gold)}
+table.contacts-table{width:100%;border-collapse:collapse}
+table.contacts-table th{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;padding:10px 20px;text-align:left;border-bottom:1px solid var(--border);background:var(--light)}
+table.contacts-table td{padding:11px 20px;font-size:13px;border-bottom:1px solid var(--border);color:#111}
+table.contacts-table tr:last-child td{border-bottom:none}
+table.contacts-table tr:hover td{background:#fafafa}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px}
+.tag-green{background:#D1FAE5;color:#065F46}
+.tag-red{background:#FEE2E2;color:#991B1B}
+.tag-yellow{background:#FEF3C7;color:#92400E}
+
+/* ── PIPELINE ── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:16px;font-weight:800;color:#111}
+.pipeline-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.pipeline-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:16px}
+.pipeline-stage-name{font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.pipeline-count{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:#111;line-height:1;margin-bottom:12px}
+.pipeline-input-row{display:flex;gap:6px}
+.pipeline-input-row input{flex:1;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;outline:none;transition:border 0.15s}
+.pipeline-input-row input:focus{border-color:var(--gold)}
+.btn-add{background:var(--gold);border:none;color:var(--navy);font-weight:800;font-size:14px;padding:6px 12px;border-radius:6px;transition:background 0.15s}
+.btn-add:hover{background:var(--gold-dark)}
+
+/* ── ADMIN ── */
+.admin-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:24px}
+.admin-tab{padding:10px 20px;font-size:14px;font-weight:700;color:var(--gray);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s}
+.admin-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.admin-section{display:none}
+.admin-section.active{display:block}
+.admin-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:16px}
+.admin-card-title{font-size:15px;font-weight:800;margin-bottom:16px}
+.admin-form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.admin-form input,.admin-form select{border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;transition:border 0.15s;min-width:200px}
+.admin-form input:focus,.admin-form select:focus{border-color:var(--gold)}
+.btn-primary{background:var(--navy);color:var(--white);border:none;font-weight:700;font-size:13px;padding:9px 18px;border-radius:8px;transition:background 0.15s}
+.btn-primary:hover{background:var(--navy2)}
+.admin-list{display:flex;flex-direction:column;gap:10px}
+.admin-list-item{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--light);border-radius:8px;font-size:14px}
+.admin-list-item-info{display:flex;flex-direction:column;gap:2px}
+.admin-list-item-name{font-weight:700}
+.admin-list-item-sub{font-size:12px;color:var(--gray)}
+.admin-actions{display:flex;gap:8px}
+.btn-sm{font-size:12px;font-weight:700;padding:5px 12px;border-radius:6px;border:none;transition:all 0.15s}
+.btn-sm-primary{background:var(--navy);color:var(--white)}
+.btn-sm-primary:hover{background:var(--navy2)}
+.btn-sm-gold{background:var(--gold);color:var(--navy)}
+.btn-sm-gold:hover{background:var(--gold-dark)}
+.btn-sm-danger{background:var(--red);color:var(--white)}
+.btn-sm-danger:hover{background:#dc2626}
+.badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:0.5px}
+.badge-admin{background:#EDE9FE;color:#7C3AED}
+.badge-operator{background:#DBEAFE;color:#1D4ED8}
+.badge-client{background:#D1FAE5;color:#065F46}
+
+/* ── MODAL ── */
+#modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center}
+.modal-box{background:var(--white);border-radius:16px;width:100%;max-width:800px;max-height:85vh;overflow-y:auto;padding:28px}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-size:16px;font-weight:800}
+.btn-close{background:transparent;border:none;font-size:20px;color:var(--gray);line-height:1}
+.btn-close:hover{color:#111}
+.modal-stage-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:14px;font-weight:500}
+.modal-stage-item.is-default{background:var(--light)}
+.modal-add-row{display:flex;gap:8px;margin-top:16px}
+.modal-add-row input{flex:1;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none}
+.modal-add-row input:focus{border-color:var(--gold)}
+.modal-company-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:14px;cursor:pointer}
+.modal-company-item input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold)}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 24px;color:var(--gray)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-text{font-size:15px;font-weight:600}
+.empty-sub{font-size:13px;margin-top:4px}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;color:var(--gray);font-size:14px}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+
+/* ── LEADS TABLE ── */
+table.leads-table{width:100%;border-collapse:collapse}
+table.leads-table th{font-size:11px;font-weight:800;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;padding:10px 20px;text-align:left;border-bottom:1px solid var(--border);background:var(--light)}
+table.leads-table td{padding:11px 20px;font-size:13px;border-bottom:1px solid var(--border);color:#111}
+table.leads-table tr:last-child td{border-bottom:none}
+table.leads-table tr:hover td{background:#fafafa}
+
+/* ── CAMPAIGN CARDS ── */
+.campaign-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:14px}
+.campaign-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.campaign-name{font-size:16px;font-weight:800;color:#111}
+.campaign-meta{font-size:12px;color:var(--gray);margin-top:2px}
+.campaign-stats{display:flex;gap:20px;padding-top:12px;border-top:1px solid var(--border)}
+.campaign-stat{text-align:center}
+.campaign-stat-value{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;color:#111;line-height:1}
+.campaign-stat-label{font-size:11px;color:var(--gray);font-weight:700;text-transform:uppercase}
+
+/* ── INBOX THREADS ── */
+.inbox-thread{padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s}
+.inbox-thread:hover{background:var(--light)}
+.inbox-thread.active{background:#EDE9FE}
+.inbox-thread.unread .inbox-thread-name{font-weight:800}
+.inbox-thread-name{font-size:13px;font-weight:600;color:#111}
+.inbox-thread-preview{font-size:12px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-thread-time{font-size:11px;color:var(--gray)}
+
+/* ── CHAT MESSAGES ── */
+.chat-msg{max-width:75%;padding:9px 14px;border-radius:12px;font-size:13px;line-height:1.5}
+.chat-msg-out{align-self:flex-end;background:#DCF8C6;color:#111;border-radius:12px 12px 4px 12px}
+.chat-msg-in{align-self:flex-start;background:var(--light);color:#111;border-radius:12px 12px 12px 4px}
+.chat-msg-time{font-size:10px;color:var(--gray);margin-top:3px;text-align:right}
+
+/* ── STATUS TAGS ── */
+.status-new{background:#DBEAFE;color:#1D4ED8}
+.status-sent{background:#EDE9FE;color:#7C3AED}
+.status-delivered{background:#D1FAE5;color:#065F46}
+.status-responded{background:#D1FAE5;color:#065F46}
+.status-converted{background:#111;color:#fff}
+.status-unsubscribed{background:#FEE2E2;color:#991B1B}
+
+/* ── IMPORT MODAL ── */
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:all 0.2s}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--gold);background:var(--gold-light)}
+.drop-zone-icon{font-size:36px;margin-bottom:12px}
+.drop-zone-text{font-size:15px;font-weight:700;color:#111}
+.drop-zone-sub{font-size:13px;color:var(--gray);margin-top:4px}
+</style>
+</head>
+<body>
+
+<!-- ============================================================ LOGIN -->
+<div id="login-page">
+  <div class="login-box">
+    <div class="login-logo">RECOVERY <span>LEADS</span></div>
+    <div class="login-sub">Dashboard de Operações</div>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password" onkeydown="if(event.key==='Enter')login()">
+    <button class="btn-login" onclick="login()">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ============================================================ APP -->
+<div id="app">
+<div class="app-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-text">RECOVERY <span>LEADS</span></div>
+      <div class="sidebar-logo-sub">Dashboard</div>
+    </div>
+
+    <div class="sidebar-section">Empresa</div>
+    <select class="sidebar-select" id="company-select" onchange="onCompanyChange(this.value)">
+      <option value="">Sem empresas</option>
+    </select>
+
+    <div class="sidebar-section">Menu</div>
+    <a class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+    <a class="nav-item" id="nav-leads" onclick="showPage('leads')" style="display:none">
+      <span class="nav-icon">👥</span> Leads
+    </a>
+    <a class="nav-item" id="nav-campaigns" onclick="showPage('campaigns')" style="display:none">
+      <span class="nav-icon">🚀</span> Campanhas
+    </a>
+    <a class="nav-item" id="nav-inbox" onclick="showPage('inbox')" style="display:none">
+      <span class="nav-icon">💬</span> Inbox
+      <span id="inbox-badge" style="display:none;margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:20px">0</span>
+    </a>
+    <a class="nav-item" id="nav-context" onclick="showPage('context')" style="display:none">
+      <span class="nav-icon">📋</span> Contexto
+    </a>
+    <a class="nav-item" id="nav-reports" onclick="showPage('reports')">
+      <span class="nav-icon">✦</span> Relatórios
+    </a>
+    <a class="nav-item" id="nav-agent" onclick="showPage('agent')">
+      <span class="nav-icon">🤖</span> Agente IA
+    </a>
+    <a class="nav-item" id="nav-admin" onclick="showPage('admin')" style="display:none">
+      <span class="nav-icon">⚙️</span> Administração
+    </a>
+
+    <div class="sidebar-bottom">
+      <div class="sidebar-user-name" id="sidebar-user-name">—</div>
+      <div class="sidebar-user-role" id="sidebar-user-role">—</div>
+      <button class="btn-logout" onclick="logout()">Sair</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title" id="dashboard-company-name">Dashboard</div>
+        <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px">
+          <button class="btn-primary" onclick="openContactsModal()" style="font-size:13px;padding:8px 16px">Ver Contactos</button>
+          <button id="btn-sync" onclick="runSync()" style="font-size:13px;padding:8px 16px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;font-weight:700;font-family:Barlow,sans-serif">↻ Sincronizar</button>
+          <span id="sync-status" style="font-size:12px;color:var(--gray)"></span>
+          <div class="period-tabs">
+            <button class="period-tab active" onclick="setPeriod('day',this)">Hoje</button>
+            <button class="period-tab" onclick="setPeriod('week',this)">Semana</button>
+            <button class="period-tab" onclick="setPeriod('month',this)">Mês</button>
+            <button class="period-tab" onclick="setPeriod('year',this)">Ano</button>
+          </div>
+          <div class="date-nav">
+            <button class="date-nav-arrow" onclick="shiftPeriod(-1)">‹</button>
+            <span class="date-nav-label" id="date-nav-label" onclick="openDatePicker()" title="Clica para escolher data">—</span>
+            <button class="date-nav-arrow" onclick="shiftPeriod(1)">›</button>
+            <input type="date" id="custom-date" onchange="setCustomDate(this.value)">
+          </div>
+        </div>
+      </div>
+
+      <!-- CAMPAIGN FILTER -->
+      <div style="margin-bottom:20px" id="campaign-filter-wrap">
+        <div class="period-tabs" style="display:inline-flex" id="campaign-tabs">
+          <button class="period-tab active" onclick="setCampaign(null,this)">Todas</button>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-label">Mensagens Enviadas</div>
+          <div class="stat-value" id="stat-sent">—</div>
+          <div class="stat-sub">Total do período</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Respostas Recebidas</div>
+          <div class="stat-value" id="stat-responded">—</div>
+          <div class="stat-sub">Contactos que responderam</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">Não Entregues</div>
+          <div class="stat-value" id="stat-not-delivered">—</div>
+          <div class="stat-sub">Falha na entrega</div>
+        </div>
+      </div>
+
+      <!-- RATES -->
+      <div class="rates-grid">
+        <div class="rate-card">
+          <div class="rate-label">Taxa de Resposta</div>
+          <div class="rate-value green" id="rate-responded">0%</div>
+        </div>
+        <div class="rate-card">
+          <div class="rate-label">Sem Resposta</div>
+          <div class="rate-value yellow" id="rate-no-response">0%</div>
+        </div>
+        <div class="rate-card">
+          <div class="rate-label">Não Entregues</div>
+          <div class="rate-value red" id="rate-not-delivered">0%</div>
+        </div>
+      </div>
+
+      <!-- EVOLUÇÃO -->
+      <div class="section-header" style="margin-top:28px">
+        <div class="section-title">Evolução</div>
+        <div style="display:flex;gap:8px">
+          <button onclick="setChartRange(14,this)" class="period-tab" style="font-size:11px;padding:4px 10px">14d</button>
+          <button onclick="setChartRange(30,this)" class="period-tab active" style="font-size:11px;padding:4px 10px">30d</button>
+          <button onclick="setChartRange(90,this)" class="period-tab" style="font-size:11px;padding:4px 10px">90d</button>
+        </div>
+      </div>
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:28px">
+        <canvas id="evolution-chart" height="90"></canvas>
+      </div>
+
+      <!-- PIPELINE -->
+      <div class="section-header">
+        <div class="section-title">Pipeline</div>
+      </div>
+      <div class="pipeline-grid" id="pipeline-container">
+        <div class="loading">A carregar...</div>
+      </div>
+
+      <!-- FATURAÇÃO -->
+      <div class="section-header" style="margin-top:28px">
+        <div class="section-title">Retorno sobre Investimento</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px" id="billing-section">
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:8px">Investimento</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;color:#111" id="billing-total">—</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:4px">Pago à Recovery Leads</div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:8px">Retorno Gerado</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;color:#065F46" id="billing-return">—</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:4px">Faturação do cliente</div>
+        </div>
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;padding:20px">
+          <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:8px">Lucro Gerado</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;color:#7C3AED" id="billing-profit">—</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:4px">Retorno − Investimento</div>
+        </div>
+        <div style="background:#111;border-radius:12px;padding:20px">
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);text-transform:uppercase;margin-bottom:8px">ROI</div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;color:#fff" id="billing-roi">—</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px">Por cada € investido</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTEXT PAGE -->
+    <div class="page" id="page-context">
+      <div class="page-header">
+        <div class="page-title" id="context-company-name">Contexto</div>
+        <button class="btn-primary" onclick="saveContext()" id="btn-save-context" style="font-size:13px;padding:8px 18px">Guardar</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div class="admin-card" style="margin-bottom:0">
+          <div class="admin-card-title">Sector / Tipo de negócio</div>
+          <input type="text" id="ctx-sector" placeholder="Ex: Imobiliário — angariação, Clínica dentária, Recrutamento TI..."
+            style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+        </div>
+        <div class="admin-card" style="margin-bottom:0">
+          <div class="admin-card-title">Objectivo da campanha</div>
+          <input type="text" id="ctx-objective" placeholder="Ex: Marcar reuniões com proprietários para angariação"
+            style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+        </div>
+      </div>
+
+      <div class="admin-card" style="margin-bottom:16px">
+        <div class="admin-card-title">Público-alvo</div>
+        <input type="text" id="ctx-target" placeholder="Ex: Proprietários de imóveis no Grande Porto, 40-65 anos, que já tentaram vender sozinhos"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+      </div>
+
+      <div class="admin-card">
+        <div class="admin-card-title">Contexto completo do cliente</div>
+        <div style="font-size:12px;color:var(--gray);margin-bottom:10px">Cola aqui notas do onboarding, transcrições de reuniões, estratégia definida, o que já foi testado, objecções frequentes, instruções específicas — tudo o que a IA precisa de saber para analisar correctamente este cliente.</div>
+        <textarea id="ctx-context" rows="18"
+          placeholder="Exemplo:&#10;- Cliente C21 Paiva, agência imobiliária no Porto&#10;- Campanha de angariação: contactar proprietários que puseram imóveis à venda nos últimos 6 meses&#10;- Já tentaram abordagem directa com proposta de avaliação gratuita — funcionou melhor do que mencionar comissões&#10;- Objecções mais comuns: 'já tenho agência', 'não quero exclusividade'&#10;- Leads vêm principalmente do Facebook e de bases próprias da agência&#10;- Objectivo: marcar visita ao imóvel para avaliação&#10;..."
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;resize:vertical;line-height:1.6;color:#111"></textarea>
+      </div>
+
+      <div id="ctx-save-msg" style="font-size:13px;min-height:20px;margin-top:12px;text-align:right"></div>
+    </div>
+
+    <!-- REPORTS PAGE -->
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <div class="page-title">Relatórios</div>
+      </div>
+
+      <div class="admin-card" style="margin-bottom:16px">
+        <div class="admin-card-title">Gerar Relatório IA</div>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Data Início</div>
+            <input type="date" id="report-start" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Data Fim</div>
+            <input type="date" id="report-end" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+          </div>
+          <button id="btn-report" onclick="generateReport()" style="background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">✦ Gerar Relatório</button>
+        </div>
+        <div id="report-status" style="font-size:13px;color:var(--gray);min-height:18px"></div>
+      </div>
+
+      <div id="report-result" style="display:none">
+        <div class="admin-card" id="report-pdf-area">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <div id="report-pdf-title" style="font-size:13px;font-weight:700;color:var(--gray)"></div>
+            <button onclick="downloadReportPDF()" style="background:#111;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px">⬇ Descarregar PDF</button>
+          </div>
+          <div id="report-alertas" style="display:none;flex-direction:column;gap:8px;margin-bottom:20px"></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px" id="report-stats"></div>
+          <div id="report-text" style="white-space:pre-wrap;background:var(--light);border-radius:8px;padding:20px;font-size:13px;line-height:1.8"></div>
+        </div>
+      </div>
+
+      <div class="admin-card" style="margin-top:16px">
+        <div class="admin-card-title">Histórico de Relatórios</div>
+        <div id="report-history" style="display:flex;flex-direction:column;gap:8px;margin-top:4px">
+          <div style="font-size:13px;color:var(--gray)">Nenhum relatório guardado.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENT PAGE -->
+    <div class="page" id="page-agent">
+      <div class="page-header">
+        <div class="page-title">Agente IA</div>
+      </div>
+      <div class="admin-card" style="display:flex;flex-direction:column;height:calc(100vh - 160px)">
+        <div id="agent-company-name" style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:12px"></div>
+        <div id="agent-messages" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px;margin-bottom:16px"></div>
+        <div style="display:flex;gap:8px;align-items:flex-end">
+          <textarea id="agent-input" placeholder="Faz uma pergunta sobre este cliente..." rows="2"
+            style="flex:1;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:Barlow,sans-serif;outline:none;resize:none;line-height:1.5"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();agentSend()}"></textarea>
+          <button onclick="agentSend()" id="btn-agent-send"
+            style="background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;white-space:nowrap">Enviar</button>
+        </div>
+        <div style="font-size:11px;color:var(--gray);margin-top:6px">Enter para enviar · Shift+Enter para nova linha</div>
+      </div>
+    </div>
+
+    <!-- ADMIN PAGE -->
+    <div class="page" id="page-admin">
+      <div class="page-header">
+        <div class="page-title">Administração</div>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="admin-tab active" onclick="switchAdminTab('companies',this)">Empresas</button>
+        <button class="admin-tab" onclick="switchAdminTab('users',this)">Utilizadores</button>
+        <button class="admin-tab" onclick="switchAdminTab('whatsapp',this)">WhatsApp</button>
+        <button class="admin-tab" onclick="switchAdminTab('stages',this)">Estágios</button>
+        <button class="admin-tab" onclick="switchAdminTab('billing',this)">Faturação</button>
+      </div>
+
+      <!-- EMPRESAS -->
+      <div class="admin-section active" id="admin-companies">
+        <div class="admin-card">
+          <div class="admin-card-title">Nova Empresa</div>
+          <div class="admin-form">
+            <input type="text" id="new-company-name" placeholder="Nome da empresa">
+            <button class="btn-primary" onclick="createCompany()">Adicionar</button>
+          </div>
+          <div class="admin-list" id="companies-list">
+            <div class="loading">A carregar...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WHATSAPP -->
+      <div class="admin-section" id="admin-whatsapp">
+        <div class="admin-card">
+          <div class="admin-card-title">Configuração WhatsApp por Empresa</div>
+          <div style="margin-bottom:16px">
+            <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Empresa</div>
+            <select id="wa-company-select" onchange="loadWaConfig()" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;min-width:240px"></select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Phone Number ID <span style="color:var(--red)">*</span></div>
+              <input type="text" id="wa-phone-id" placeholder="Ex: 123456789012345"
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+              <div style="font-size:11px;color:var(--gray);margin-top:4px">Meta Business Suite → WhatsApp → Phone Numbers</div>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">WABA ID <span style="color:var(--red)">*</span></div>
+              <input type="text" id="wa-waba-id" placeholder="Ex: 987654321098765"
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+              <div style="font-size:11px;color:var(--gray);margin-top:4px">WhatsApp Business Account ID</div>
+            </div>
+            <div style="grid-column:1/-1">
+              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Access Token (Permanente) <span style="color:var(--red)">*</span></div>
+              <input type="password" id="wa-token" placeholder="EAAxxxxxxx..."
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+              <div style="font-size:11px;color:var(--gray);margin-top:4px">Token gerado no Meta Developer Console (System User com role Admin)</div>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Webhook Verify Token</div>
+              <input type="text" id="wa-verify-token" placeholder="Token secreto para verificar webhook"
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+              <div style="font-size:11px;color:var(--gray);margin-top:4px">Podes inventar — ex: recovery_secret_2024</div>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Número de Telefone</div>
+              <input type="text" id="wa-phone-number" placeholder="Ex: +351912345678"
+                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+            <button onclick="saveWaConfig()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Guardar</button>
+            <button onclick="testWaConnection()" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Testar Ligação</button>
+            <span id="wa-save-msg" style="font-size:13px;min-height:18px"></span>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title">Webhook URL</div>
+          <div style="font-size:13px;color:var(--gray);margin-bottom:12px">Configura este URL no Meta Developer Console → Webhooks para receber mensagens e status de entrega.</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <code id="wa-webhook-url" style="flex:1;font-size:12px;background:var(--light);padding:10px 14px;border-radius:8px;color:#555;word-break:break-all">${SUPABASE_URL}/functions/v1/whatsapp-webhook</code>
+            <button onclick="copyWaWebhookUrl()" style="background:#111;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;white-space:nowrap">Copiar</button>
+          </div>
+          <div style="margin-top:16px">
+            <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:8px">Eventos a subscrever no webhook Meta:</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">messages</span>
+              <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">message_deliveries</span>
+              <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">message_reads</span>
+              <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">messaging_optouts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESTÁGIOS -->
+      <div class="admin-section" id="admin-stages">
+        <div class="admin-card">
+          <div class="admin-card-title">Estágios do Pipeline</div>
+          <div class="admin-form">
+            <input type="text" id="new-stage-name" placeholder="Nome do estágio (ex: Tentativa 1)">
+            <input type="color" id="new-stage-color" value="#7C3AED" style="width:48px;height:38px;border:1px solid var(--border);border-radius:8px;padding:4px;cursor:pointer">
+            <button class="btn-primary" onclick="createStage()">Adicionar</button>
+          </div>
+          <div class="admin-list" id="stages-list"></div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title">Introduzir Números</div>
+          <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:20px;flex-wrap:wrap">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Empresa</div>
+              <select id="pipeline-company-select" onchange="loadStagesList();loadPipelineEntries()" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;min-width:200px"></select>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Data</div>
+              <input type="date" id="pipeline-date" onchange="loadPipelineEntries()" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            </div>
+          </div>
+          <div id="pipeline-inputs"></div>
+          <div id="pipeline-save-msg" style="font-size:13px;color:var(--green);min-height:18px;margin-top:8px"></div>
+        </div>
+      </div>
+
+      <!-- FATURAÇÃO -->
+      <div class="admin-section" id="admin-billing">
+        <div class="admin-card">
+          <div class="admin-card-title">Registar Faturação Mensal</div>
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Empresa</div>
+              <select id="billing-company-select" onchange="loadBillingEntries()" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;min-width:200px"></select>
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Mês</div>
+              <input type="month" id="billing-month" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Investimento (€)</div>
+              <input type="number" id="billing-amount" min="0" step="0.01" placeholder="Ex: 5000" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;width:150px">
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Retorno cliente (€)</div>
+              <input type="number" id="billing-return-value" min="0" step="0.01" placeholder="Ex: 200000" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;width:150px">
+            </div>
+            <div>
+              <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:6px;text-transform:uppercase">Notas</div>
+              <input type="text" id="billing-notes" placeholder="Opcional" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;width:160px">
+            </div>
+            <button onclick="saveBillingEntry()" style="background:#111;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Guardar</button>
+          </div>
+          <div id="billing-save-msg" style="font-size:13px;color:var(--green);min-height:18px"></div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-title">Histórico</div>
+          <div id="billing-history"></div>
+        </div>
+      </div>
+
+      <!-- UTILIZADORES -->
+      <div class="admin-section" id="admin-users">
+        <div class="admin-card">
+          <div class="admin-card-title">Novo Utilizador</div>
+          <div class="admin-form">
+            <input type="text" id="new-user-name" placeholder="Nome completo">
+            <input type="email" id="new-user-email" placeholder="Email">
+            <input type="password" id="new-user-password" placeholder="Password">
+            <select id="new-user-role">
+              <option value="operator">Operador</option>
+              <option value="client">Cliente</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button class="btn-primary" onclick="createUser()">Criar</button>
+          </div>
+          <div id="user-create-msg" style="font-size:13px;margin-bottom:12px;min-height:18px"></div>
+          <div class="admin-list" id="users-list">
+            <div class="loading">A carregar...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADS PAGE -->
+    <div class="page" id="page-leads">
+      <div class="page-header">
+        <div class="page-title" id="leads-company-name">Leads</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="leads-search" placeholder="Pesquisar nome ou telefone..." oninput="filterLeads()"
+            style="border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;min-width:220px">
+          <select id="leads-status-filter" onchange="filterLeads()"
+            style="border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            <option value="">Todos os estados</option>
+            <option value="new">Novo</option>
+            <option value="sent">Enviado</option>
+            <option value="delivered">Entregue</option>
+            <option value="responded">Respondeu</option>
+            <option value="converted">Convertido</option>
+            <option value="unsubscribed">Opt-out</option>
+          </select>
+          <button onclick="openImportModal()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">⬆ Importar CSV</button>
+        </div>
+      </div>
+
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--light)">
+          <div style="font-size:12px;font-weight:700;color:var(--gray)" id="leads-count">—</div>
+          <div style="display:flex;gap:8px">
+            <button onclick="exportLeadsCSV()" style="background:transparent;border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;color:var(--gray)">⬇ Exportar</button>
+          </div>
+        </div>
+        <div id="leads-table-container"><div class="loading">A carregar...</div></div>
+      </div>
+    </div>
+
+    <!-- CAMPAIGNS PAGE -->
+    <div class="page" id="page-campaigns">
+      <div class="page-header">
+        <div class="page-title">Campanhas</div>
+        <button onclick="openNewCampaignModal()" style="background:var(--gold);color:var(--navy);border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:800;font-family:Barlow,sans-serif;cursor:pointer">+ Nova Campanha</button>
+      </div>
+
+      <div id="campaigns-list-container"><div class="loading">A carregar...</div></div>
+    </div>
+
+    <!-- INBOX PAGE -->
+    <div class="page" id="page-inbox">
+      <div class="page-header">
+        <div class="page-title">Inbox — Respostas WhatsApp</div>
+        <button onclick="markAllRead()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;color:var(--gray)">Marcar tudo lido</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:16px;height:calc(100vh - 140px)">
+        <!-- Lista de conversas -->
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+            <input type="text" id="inbox-search" placeholder="Pesquisar..." oninput="filterInbox()"
+              style="width:100%;border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+          </div>
+          <div id="inbox-threads" style="flex:1;overflow-y:auto"></div>
+        </div>
+        <!-- Conversa activa -->
+        <div style="background:var(--white);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column">
+          <div id="inbox-chat-header" style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div style="font-size:15px;font-weight:800;color:#111" id="inbox-chat-name">Seleciona uma conversa</div>
+            <div style="display:flex;gap:8px" id="inbox-chat-actions" style="display:none">
+              <select id="inbox-lead-status" onchange="updateLeadStatus()" style="border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-family:Barlow,sans-serif;outline:none">
+                <option value="responded">Respondeu</option>
+                <option value="converted">Convertido</option>
+                <option value="unsubscribed">Opt-out</option>
+              </select>
+            </div>
+          </div>
+          <div id="inbox-chat-messages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px">
+            <div style="text-align:center;color:var(--gray);font-size:13px;margin-top:40px">Seleciona uma conversa à esquerda</div>
+          </div>
+          <div id="inbox-reply-bar" style="display:none;padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
+            <textarea id="inbox-reply-input" placeholder="Escreve uma resposta..." rows="2"
+              style="flex:1;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:Barlow,sans-serif;outline:none;resize:none"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendInboxReply()}"></textarea>
+            <button onclick="sendInboxReply()" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Enviar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box" id="modal-content"></div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG — preenche com os teus dados do Supabase
+// ============================================================
+const SUPABASE_URL  = 'https://mouybtewahhbvnxikyzj.supabase.co'
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vdXlidGV3YWhoYnZueGlreXpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NTM0MzksImV4cCI6MjA5NzAyOTQzOX0.r23I_0z5oYbvBTm9567GMCZtI1c0YGibm-24m6s2MMY'
+const { createClient } = supabase
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY)
+
+// ============================================================
+// STATE
+// ============================================================
+let profile    = null
+let companies  = []
+let activeCompany = null
+let period     = 'day'
+let customDate = null
+let periodOffset = 0
+let activeCampaign = null
+let allContacts = []
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  const { data: { session } } = await sb.auth.getSession()
+  if (session) await bootApp(session.user.id)
+  else showLogin()
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (session) await bootApp(session.user.id)
+    else showLogin()
+  })
+}
+
+async function bootApp(userId) {
+  const { data } = await sb.from('profiles').select('*').eq('id', userId).single()
+  if (!data) { showLogin(); return }
+  profile = data
+
+  await loadCompanies()
+
+  document.getElementById('sidebar-user-name').textContent = profile.name
+  document.getElementById('sidebar-user-role').textContent = profile.role
+  if (profile.role === 'admin') document.getElementById('nav-admin').style.display = 'flex'
+  if (profile.role === 'admin' || profile.role === 'operator') {
+    document.getElementById('nav-context').style.display = 'flex'
+    document.getElementById('nav-leads').style.display = 'flex'
+    document.getElementById('nav-campaigns').style.display = 'flex'
+    document.getElementById('nav-inbox').style.display = 'flex'
+  }
+
+  renderCompanySelect()
+  showApp()
+  await loadCampaignFilter()
+  // Inicializar date nav com hoje
+  const todayVal = new Date().toISOString().split('T')[0]
+  document.getElementById('custom-date').value = todayVal
+  customDate = todayVal
+  period = 'custom'
+  updateDateNavLabel()
+  await loadDashboard()
+}
+
+async function loadCompanies() {
+  if (profile.role === 'admin') {
+    const { data } = await sb.from('companies').select('*').order('name')
+    companies = data || []
+  } else if (profile.role === 'operator') {
+    const { data } = await sb.from('operator_companies').select('companies(*)').eq('operator_id', profile.id)
+    companies = (data || []).map(d => d.companies).filter(Boolean)
+  } else {
+    const { data } = await sb.from('client_companies').select('companies(*)').eq('client_id', profile.id)
+    companies = (data || []).map(d => d.companies).filter(Boolean)
+  }
+  if (companies.length && !activeCompany) activeCompany = companies[0]
+}
+
+function renderCompanySelect() {
+  const sel = document.getElementById('company-select')
+  sel.innerHTML = companies.length
+    ? companies.map(c => `<option value="${c.id}" ${activeCompany?.id === c.id ? 'selected' : ''}>${c.name}</option>`).join('')
+    : '<option value="">Sem empresas atribuídas</option>'
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+async function login() {
+  const email    = document.getElementById('login-email').value.trim()
+  const password = document.getElementById('login-password').value
+  document.getElementById('login-error').textContent = ''
+  const { error } = await sb.auth.signInWithPassword({ email, password })
+  if (error) document.getElementById('login-error').textContent = error.message
+}
+
+async function logout() {
+  await sb.auth.signOut()
+  profile = null; companies = []; activeCompany = null; period = 'day'
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showLogin() {
+  document.getElementById('login-page').style.display = 'flex'
+  document.getElementById('app').style.display = 'none'
+}
+
+function showApp() {
+  document.getElementById('login-page').style.display = 'none'
+  document.getElementById('app').style.display = 'block'
+}
+
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById(`page-${name}`).classList.add('active')
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'))
+  document.getElementById(`nav-${name}`)?.classList.add('active')
+  if (name === 'admin') loadAdmin()
+  if (name === 'context') loadContext()
+  if (name === 'reports') { initReportDates(); loadReportHistory() }
+  if (name === 'agent') initAgent()
+  if (name === 'leads') loadLeads()
+  if (name === 'campaigns') loadCampaigns()
+  if (name === 'inbox') loadInbox()
+}
+
+function initReportDates() {
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+  const firstDay = today.substring(0, 8) + '01'
+  document.getElementById('report-start').value = firstDay
+  document.getElementById('report-end').value   = today
+}
+
+function setPeriod(p, btn) {
+  period = p
+  periodOffset = 0
+  customDate = null
+  document.getElementById('custom-date').value = ''
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'))
+  btn.classList.add('active')
+  updateDateNavLabel()
+  loadDashboard()
+}
+
+function setCustomDate(val) {
+  if (!val) return
+  customDate = val
+  period = 'custom'
+  periodOffset = 0
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'))
+  updateDateNavLabel()
+  loadDashboard()
+}
+
+function shiftPeriod(dir) {
+  if (period === 'custom' || period === 'day') {
+    const base = customDate || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+    const d = new Date(base + 'T12:00:00')
+    d.setDate(d.getDate() + dir)
+    const val = d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+    document.getElementById('custom-date').value = val
+    customDate = val
+    period = 'custom'
+    document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'))
+  } else {
+    periodOffset += dir
+  }
+  updateDateNavLabel()
+  loadDashboard()
+}
+
+function openDatePicker() {
+  document.getElementById('custom-date').showPicker?.()
+}
+
+const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+function updateDateNavLabel() {
+  const label = document.getElementById('date-nav-label')
+  if (period === 'custom' || period === 'day') {
+    const d = customDate || new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+    const yesterday = new Date(Date.now()-86400000).toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+    const [y,m,day] = d.split('-')
+    label.textContent = d === today ? 'Hoje' : d === yesterday ? 'Ontem' : `${day}/${m}/${y}`
+  } else if (period === 'week') {
+    const { start, end } = getPeriodDates('week')
+    const [,ms,ds] = start.split('-')
+    const [,me,de] = end.split('-')
+    label.textContent = ms === me ? `${ds}-${de} ${MESES[parseInt(ms)-1].substring(0,3)}` : `${ds} ${MESES[parseInt(ms)-1].substring(0,3)} - ${de} ${MESES[parseInt(me)-1].substring(0,3)}`
+  } else if (period === 'month') {
+    const { start } = getPeriodDates('month')
+    const [y,m] = start.split('-')
+    label.textContent = `${MESES[parseInt(m)-1]} ${y}`
+  } else if (period === 'year') {
+    const { start } = getPeriodDates('year')
+    label.textContent = start.split('-')[0]
+  }
+}
+
+function onCompanyChange(id) {
+  activeCompany = companies.find(c => c.id === id) || null
+  activeCampaign = null
+  agentHistory = []
+  loadCampaignFilter()
+  loadDashboard()
+}
+
+function setCampaign(camp, btn) {
+  activeCampaign = camp
+  document.querySelectorAll('#campaign-tabs .period-tab').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  loadDashboard()
+}
+
+async function loadCampaignFilter() {
+  if (!activeCompany) return
+
+  const { data } = await sb.from('contact_messages')
+    .select('campaign')
+    .eq('company_id', activeCompany.id)
+    .not('campaign', 'is', null)
+
+  const campaigns = [...new Set((data || []).map(d => d.campaign).filter(Boolean))]
+
+  const tabs = document.getElementById('campaign-tabs')
+  const campLabels = { imobiliario: 'Imobiliário', recrutamento: 'Recrutamento', outro: 'Outro' }
+
+  tabs.innerHTML = `<button class="period-tab ${!activeCampaign ? 'active' : ''}" onclick="setCampaign(null,this)">Todas</button>`
+  campaigns.forEach(c => {
+    tabs.innerHTML += `<button class="period-tab ${activeCampaign === c ? 'active' : ''}" onclick="setCampaign('${c}',this)">${campLabels[c] || c}</button>`
+  })
+}
+
+// ============================================================
+// PERIOD HELPERS
+// ============================================================
+function getPeriodDates(p) {
+  const now   = new Date()
+  const today = now.toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+
+  if (p === 'custom' && customDate) return { start: customDate, end: customDate }
+
+  if (p === 'day') return { start: today, end: today }
+
+  if (p === 'week') {
+    const base = new Date(now)
+    base.setDate(base.getDate() + periodOffset * 7)
+    const day = base.getDay() || 7
+    const mon = new Date(base); mon.setDate(base.getDate() - day + 1)
+    const sun = new Date(mon);  sun.setDate(mon.getDate() + 6)
+    return {
+      start: mon.toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' }),
+      end:   sun.toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+    }
+  }
+
+  if (p === 'month') {
+    const base = new Date(now.getFullYear(), now.getMonth() + periodOffset, 1)
+    const y = base.getFullYear()
+    const m = String(base.getMonth() + 1).padStart(2, '0')
+    const lastDay = new Date(y, base.getMonth() + 1, 0).getDate()
+    const end = periodOffset === 0 ? today : `${y}-${m}-${String(lastDay).padStart(2,'0')}`
+    return { start: `${y}-${m}-01`, end }
+  }
+
+  if (p === 'year') {
+    const y = now.getFullYear() + periodOffset
+    const end = periodOffset === 0 ? today : `${y}-12-31`
+    return { start: `${y}-01-01`, end }
+  }
+
+  return { start: today, end: today }
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+async function loadDashboard() {
+  if (!activeCompany) {
+    setStats(0,0,0)
+    document.getElementById('pipeline-container').innerHTML = '<div class="empty"><div class="empty-icon">🏢</div><div class="empty-text">Nenhuma empresa selecionada</div></div>'
+    return
+  }
+
+  document.getElementById('dashboard-company-name').textContent = activeCompany.name
+  const { start, end } = getPeriodDates(period)
+
+  // Message stats — usar count: 'exact' para ultrapassar o limite de 1000 do Supabase
+  const baseFilter = (q) => {
+    q = q.eq('company_id', activeCompany.id).gte('sent_at', start).lte('sent_at', end)
+    if (activeCampaign) q = q.eq('campaign', activeCampaign)
+    return q
+  }
+
+  const [{ count: sent }, { count: responded }, { count: notDelivered }] = await Promise.all([
+    baseFilter(sb.from('contact_messages').select('*', { count: 'exact', head: true })),
+    baseFilter(sb.from('contact_messages').select('*', { count: 'exact', head: true })).not('responded_at', 'is', null),
+    baseFilter(sb.from('contact_messages').select('*', { count: 'exact', head: true })).eq('delivered', false),
+  ])
+
+  setStats(sent || 0, responded || 0, notDelivered || 0)
+
+  // Contacts table — mantém até 1000 para visualização
+  let tableQuery = sb.from('contact_messages')
+    .select('contact_id, contact_name, sent_at, responded_at, delivered, campaign')
+    .eq('company_id', activeCompany.id)
+    .gte('sent_at', start)
+    .lte('sent_at', end)
+    .order('sent_at', { ascending: false })
+    .limit(1000)
+
+  if (activeCampaign) tableQuery = tableQuery.eq('campaign', activeCampaign)
+  const { data: msgs } = await tableQuery
+
+  allContacts = msgs || []
+  const searchEl = document.getElementById('contacts-search')
+  if (searchEl) searchEl.value = ''
+  renderContactsTable(allContacts)
+
+  // Pipeline
+  await loadPipeline(start, end)
+  await loadBillingDashboard()
+  await loadEvolutionChart()
+}
+
+function setStats(sent, responded, notDelivered) {
+  document.getElementById('stat-sent').textContent         = sent
+  document.getElementById('stat-responded').textContent    = responded
+  document.getElementById('stat-not-delivered').textContent = notDelivered
+
+  const noResponse = sent - responded - notDelivered
+  document.getElementById('rate-responded').textContent    = sent ? pct(responded, sent)    : '0%'
+  document.getElementById('rate-no-response').textContent  = sent ? pct(noResponse < 0 ? 0 : noResponse, sent) : '0%'
+  document.getElementById('rate-not-delivered').textContent = sent ? pct(notDelivered, sent) : '0%'
+}
+
+function pct(n, total) { return Math.round(n / total * 100) + '%' }
+
+function openContactsModal() {
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">Contactos do período</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <input class="contacts-search" type="text" id="contacts-search" placeholder="Pesquisar nome..." oninput="filterContacts()" style="width:100%;margin-bottom:16px">
+    <div id="contacts-table-container"><div class="loading">A carregar...</div></div>
+  `
+  document.getElementById('modal').style.display = 'flex'
+  renderContactsTable(allContacts)
+}
+
+function renderContactsTable(data) {
+  const container = document.getElementById('contacts-table-container')
+  if (!container) return
+  if (!data.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-text">Sem contactos neste período</div></div>'
+    return
+  }
+  container.innerHTML = `
+    <table class="contacts-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Data Envio</th>
+          <th>Resposta</th>
+          <th>Entregue</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(m => `
+          <tr>
+            <td style="font-weight:600">${escHtml(m.contact_name || m.contact_id)}</td>
+            <td>${formatDate(m.sent_at)}</td>
+            <td>${m.responded_at
+              ? `<span class="tag tag-green">✓ ${formatDate(m.responded_at)}</span>`
+              : `<span class="tag tag-yellow">Sem resposta</span>`
+            }</td>
+            <td>${m.delivered
+              ? `<span class="tag tag-green">✓</span>`
+              : `<span class="tag tag-red">Falhou</span>`
+            }</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `
+}
+
+function filterContacts() {
+  const q = document.getElementById('contacts-search').value.toLowerCase()
+  const filtered = allContacts.filter(m => (m.contact_name || m.contact_id).toLowerCase().includes(q))
+  renderContactsTable(filtered)
+}
+
+function formatDate(d) {
+  if (!d) return '—'
+  const [y, m, day] = d.split('-')
+  return `${day}/${m}/${y}`
+}
+
+async function loadPipeline(start, end) {
+  const { data: stages } = await sb.from('pipeline_stages')
+    .select('*').eq('company_id', activeCompany.id).eq('visible', true).eq('is_default', false).order('position')
+
+  const { data: entries } = await sb.from('pipeline_entries')
+    .select('stage_id, count')
+    .eq('company_id', activeCompany.id)
+
+  const totals = {}
+  ;(entries || []).forEach(e => { totals[e.stage_id] = (totals[e.stage_id] || 0) + e.count })
+
+  const container = document.getElementById('pipeline-container')
+  if (!stages || !stages.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Sem stages configurados</div><div class="empty-sub">Adiciona stages no painel de administração</div></div>'
+    return
+  }
+
+  const isOperator = profile.role === 'operator'
+  container.innerHTML = stages.map(s => `
+    <div class="pipeline-card">
+      <div class="pipeline-stage-name">${s.name}</div>
+      <div class="pipeline-count">${totals[s.id] || 0}</div>
+      ${isOperator && !s.is_default ? `
+        <div class="pipeline-input-row">
+          <input type="number" id="stage-input-${s.id}" min="1" placeholder="Qtd">
+          <button class="btn-add" onclick="addPipelineEntry('${s.id}')">+</button>
+        </div>
+      ` : ''}
+    </div>
+  `).join('')
+}
+
+async function addPipelineEntry(stageId) {
+  const input = document.getElementById(`stage-input-${stageId}`)
+  const count = parseInt(input.value)
+  if (!count || count < 1) return
+
+  const today = new Date().toISOString().split('T')[0]
+  await sb.from('pipeline_entries').insert({
+    company_id:  activeCompany.id,
+    operator_id: profile.id,
+    stage_id:    stageId,
+    date:        today,
+    count
+  })
+
+  input.value = ''
+  const { start, end } = getPeriodDates(period)
+  await loadPipeline(start, end)
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+function switchAdminTab(name, btn) {
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'))
+  document.getElementById(`admin-${name}`).classList.add('active')
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'))
+  btn.classList.add('active')
+  if (name === 'stages')  loadAdminStages()
+  if (name === 'billing') loadAdminBilling()
+}
+
+async function loadAdmin() {
+  await loadAdminCompanies()
+  await loadAdminUsers()
+}
+
+function copyWebhookUrl(companyId) {
+  const url = `${SUPABASE_URL}/functions/v1/ghl-sync?company_id=${companyId}`
+  navigator.clipboard.writeText(url).then(() => {
+    const btns = document.querySelectorAll(`button[onclick="copyWebhookUrl('${companyId}')"]`)
+    btns.forEach(btn => {
+      btn.textContent = 'Copiado ✓'
+      setTimeout(() => { btn.textContent = 'Copiar' }, 2000)
+    })
+  })
+}
+
+async function saveLocationId(companyId, locationId) {
+  locationId = locationId.trim()
+  await sb.from('companies').update({ ghl_location_id: locationId }).eq('id', companyId)
+  await loadCompanies()
+}
+
+async function saveApiKey(companyId, apiKey) {
+  apiKey = apiKey.trim()
+  await sb.from('companies').update({ ghl_api_key: apiKey }).eq('id', companyId)
+  await loadCompanies()
+}
+
+async function loadAdminCompanies() {
+  const { data } = await sb.from('companies').select('*').order('name')
+  const list = document.getElementById('companies-list')
+
+  if (!data || !data.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-text">Nenhuma empresa criada</div></div>'
+    return
+  }
+
+  list.innerHTML = data.map(c => `
+    <div class="admin-list-item" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <div style="display:flex;justify-content:space-between;width:100%;align-items:center">
+        <div class="admin-list-item-name">${escHtml(c.name)}</div>
+        <div class="admin-actions">
+          <button class="btn-sm btn-sm-gold" onclick="openStagesModal('${c.id}','${escHtml(c.name)}')">Stages</button>
+          <button class="btn-sm btn-sm-danger" onclick="deleteCompany('${c.id}')">Apagar</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;width:100%">
+        <span style="font-size:11px;font-weight:700;color:var(--gray);white-space:nowrap">Location ID:</span>
+        <input value="${escHtml(c.ghl_location_id || '')}" placeholder="Location ID do GHL"
+          onblur="saveLocationId('${c.id}', this.value)"
+          style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-family:Barlow,sans-serif;outline:none;color:#111">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;width:100%">
+        <span style="font-size:11px;font-weight:700;color:var(--gray);white-space:nowrap">API Key:</span>
+        <input type="password" value="${escHtml(c.ghl_api_key || '')}" placeholder="pit-..."
+          onblur="saveApiKey('${c.id}', this.value)"
+          style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-family:Barlow,sans-serif;outline:none;color:#111">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;width:100%">
+        <span style="font-size:11px;font-weight:700;color:var(--gray);white-space:nowrap">Webhook URL:</span>
+        <code style="flex:1;font-size:11px;background:var(--light);padding:5px 10px;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#555">${SUPABASE_URL}/functions/v1/ghl-sync?company_id=${c.id}</code>
+        <button onclick="copyWebhookUrl('${c.id}')" style="background:#111;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;white-space:nowrap">Copiar</button>
+      </div>
+    </div>
+  `).join('')
+}
+
+async function createCompany() {
+  const nameEl = document.getElementById('new-company-name')
+  const name   = nameEl.value.trim()
+  if (!name) return
+
+  const { data, error } = await sb.from('companies').insert({ name }).select().single()
+  if (error) { alert(error.message); return }
+
+  // Criar stages fixos por defeito
+  await sb.from('pipeline_stages').insert([
+    { company_id: data.id, name: 'Mensagens Disparadas', position: 1, is_default: true },
+    { company_id: data.id, name: 'Respostas',            position: 2, is_default: true },
+    { company_id: data.id, name: 'Não Entregues',        position: 3, is_default: true }
+  ])
+
+  nameEl.value = ''
+  await loadAdminCompanies()
+  await loadCompanies()
+  renderCompanySelect()
+}
+
+async function deleteCompany(id) {
+  if (!confirm('Apagar esta empresa e todos os seus dados?')) return
+  await sb.from('companies').delete().eq('id', id)
+  if (activeCompany?.id === id) activeCompany = null
+  await loadAdminCompanies()
+  await loadCompanies()
+  renderCompanySelect()
+}
+
+async function loadAdminUsers() {
+  const { data } = await sb.from('profiles').select('*').order('name')
+  const list = document.getElementById('users-list')
+
+  if (!data || !data.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-text">Nenhum utilizador encontrado</div></div>'
+    return
+  }
+
+  list.innerHTML = data.map(u => `
+    <div class="admin-list-item">
+      <div class="admin-list-item-info">
+        <div class="admin-list-item-name">${escHtml(u.name)}</div>
+        <div class="admin-list-item-sub">
+          <span class="badge badge-${u.role}">${u.role}</span>
+        </div>
+      </div>
+      <div class="admin-actions">
+        ${u.role !== 'admin' ? `
+          <button class="btn-sm btn-sm-primary" onclick="openUserModal('${u.id}','${escHtml(u.name)}','${u.role}')">Empresas</button>
+          <button class="btn-sm btn-sm-gold" onclick="changeRole('${u.id}','${u.role}')">Role</button>
+        ` : ''}
+      </div>
+    </div>
+  `).join('')
+}
+
+async function createUser() {
+  const name     = document.getElementById('new-user-name').value.trim()
+  const email    = document.getElementById('new-user-email').value.trim()
+  const password = document.getElementById('new-user-password').value
+  const role     = document.getElementById('new-user-role').value
+  const msg      = document.getElementById('user-create-msg')
+
+  if (!name || !email || !password) { msg.style.color = 'var(--red)'; msg.textContent = 'Preenche todos os campos.'; return }
+
+  const { data, error } = await sb.auth.signUp({
+    email, password,
+    options: { data: { name, role } }
+  })
+
+  if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return }
+
+  // Garantir que o role fica correto na profiles (o trigger pode demorar)
+  setTimeout(async () => {
+    if (data.user) {
+      await sb.from('profiles').upsert({ id: data.user.id, name, role })
+    }
+  }, 1000)
+
+  msg.style.color = 'var(--green)'
+  msg.textContent = `Utilizador "${name}" criado com sucesso.`
+  document.getElementById('new-user-name').value    = ''
+  document.getElementById('new-user-email').value   = ''
+  document.getElementById('new-user-password').value = ''
+
+  setTimeout(() => { msg.textContent = '' }, 3000)
+  await loadAdminUsers()
+}
+
+async function changeRole(userId, currentRole) {
+  const roles = ['operator', 'client', 'admin']
+  const next  = roles[(roles.indexOf(currentRole) + 1) % roles.length]
+  if (!confirm(`Alterar role para "${next}"?`)) return
+  await sb.from('profiles').update({ role: next }).eq('id', userId)
+  await loadAdminUsers()
+}
+
+// ============================================================
+// MODAL — STAGES
+// ============================================================
+// ADMIN — ESTÁGIOS
+// ============================================================
+async function loadAdminStages() {
+  // Preencher selector de empresas
+  const sel = document.getElementById('pipeline-company-select')
+  sel.innerHTML = companies.map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('')
+
+  // Data default = hoje
+  const dateInput = document.getElementById('pipeline-date')
+  if (!dateInput.value) dateInput.value = new Date().toISOString().split('T')[0]
+
+  // Carregar estágios da primeira empresa
+  await loadStagesList()
+  await loadPipelineEntries()
+}
+
+async function loadStagesList() {
+  const companyId = document.getElementById('pipeline-company-select')?.value
+  if (!companyId) return
+
+  const { data: stages } = await sb.from('pipeline_stages')
+    .select('*').eq('company_id', companyId).order('position')
+
+  const list = document.getElementById('stages-list')
+  if (!stages || stages.length === 0) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--gray)">Sem estágios criados.</div>'
+    return
+  }
+
+  list.innerHTML = stages.map((s, i) => {
+    const visible = s.visible !== false
+    return `
+    <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;background:var(--light);margin-bottom:8px;opacity:${visible ? 1 : 0.5}">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <button onclick="moveStage('${s.id}', -1)" ${i === 0 ? 'disabled' : ''} style="background:none;border:none;cursor:pointer;font-size:12px;line-height:1;padding:1px 4px;color:${i === 0 ? 'var(--border)' : '#111'}">▲</button>
+        <button onclick="moveStage('${s.id}', 1)" ${i === stages.length - 1 ? 'disabled' : ''} style="background:none;border:none;cursor:pointer;font-size:12px;line-height:1;padding:1px 4px;color:${i === stages.length - 1 ? 'var(--border)' : '#111'}">▼</button>
+      </div>
+      <div style="width:10px;height:10px;border-radius:50%;flex-shrink:0;background:${escHtml(s.color || '#7C3AED')}"></div>
+      <input value="${escHtml(s.name)}" onblur="renameStage('${s.id}', this.value)"
+        style="flex:1;border:1px solid transparent;border-radius:6px;padding:5px 8px;font-size:13px;font-weight:600;font-family:Barlow,sans-serif;background:transparent;outline:none"
+        onfocus="this.style.borderColor='var(--border)';this.style.background='#fff'"
+        onblur="this.style.borderColor='transparent';this.style.background='transparent';renameStage('${s.id}', this.value)">
+      <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--gray);white-space:nowrap">
+        <input type="checkbox" ${visible ? 'checked' : ''} onchange="toggleStageVisible('${s.id}', this.checked)" style="cursor:pointer">
+        Mostrar
+      </label>
+      <button onclick="deleteStageAdmin('${s.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0">✕</button>
+    </div>`
+  }).join('')
+}
+
+async function createStage() {
+  const companyId = document.getElementById('pipeline-company-select')?.value
+  const name      = document.getElementById('new-stage-name').value.trim()
+  const color     = document.getElementById('new-stage-color').value
+
+  if (!companyId || !name) return
+
+  const { data: existing } = await sb.from('pipeline_stages')
+    .select('position').eq('company_id', companyId).order('position', { ascending: false }).limit(1).single()
+
+  const pos = (existing?.position || 0) + 1
+  await sb.from('pipeline_stages').insert({ company_id: companyId, name, color, position: pos, is_default: false })
+
+  document.getElementById('new-stage-name').value = ''
+  await loadStagesList()
+  await loadPipelineEntries()
+}
+
+async function renameStage(stageId, name) {
+  name = name.trim()
+  if (!name) return
+  await sb.from('pipeline_stages').update({ name }).eq('id', stageId)
+}
+
+async function moveStage(stageId, dir) {
+  const companyId = document.getElementById('pipeline-company-select')?.value
+  if (!companyId) return
+
+  const { data: stages } = await sb.from('pipeline_stages')
+    .select('id, position').eq('company_id', companyId).order('position')
+
+  const idx   = stages.findIndex(s => s.id === stageId)
+  const other = stages[idx + dir]
+  if (!other) return
+
+  await Promise.all([
+    sb.from('pipeline_stages').update({ position: other.position }).eq('id', stageId),
+    sb.from('pipeline_stages').update({ position: stages[idx].position }).eq('id', other.id)
+  ])
+
+  await loadStagesList()
+}
+
+async function toggleStageVisible(stageId, visible) {
+  await sb.from('pipeline_stages').update({ visible }).eq('id', stageId)
+  await loadStagesList()
+  const { start, end } = getPeriodDates(period)
+  loadPipeline(start, end)
+}
+
+async function deleteStageAdmin(stageId) {
+  if (!confirm('Apagar este estágio e todos os seus dados?')) return
+  await sb.from('pipeline_stages').delete().eq('id', stageId)
+  await loadStagesList()
+  await loadPipelineEntries()
+}
+
+async function loadPipelineEntries() {
+  const companyId = document.getElementById('pipeline-company-select')?.value
+  const date      = document.getElementById('pipeline-date')?.value
+  if (!companyId || !date) return
+
+  const [{ data: stages }, { data: entries }] = await Promise.all([
+    sb.from('pipeline_stages').select('*').eq('company_id', companyId).order('position'),
+    sb.from('pipeline_entries').select('stage_id, count').eq('company_id', companyId).eq('date', date)
+  ])
+
+  const totals = {}
+  ;(entries || []).forEach(e => { totals[e.stage_id] = (totals[e.stage_id] || 0) + e.count })
+
+  const container = document.getElementById('pipeline-inputs')
+  if (!stages || stages.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--gray)">Cria estágios primeiro.</div>'
+    return
+  }
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px">
+      ${stages.map(s => `
+        <div style="background:var(--light);border-radius:10px;padding:14px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+            <div style="width:10px;height:10px;border-radius:50%;background:${escHtml(s.color || '#7C3AED')}"></div>
+            <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase">${escHtml(s.name)}</div>
+          </div>
+          <input type="number" min="0" value="${totals[s.id] || 0}" id="pe-${s.id}"
+            style="width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:20px;font-weight:900;font-family:'Barlow Condensed',sans-serif;outline:none;text-align:center"
+            onchange="savePipelineEntry('${s.id}', '${companyId}', '${date}')">
+        </div>
+      `).join('')}
+    </div>
+    <button onclick="saveAllPipelineEntries('${companyId}', '${date}')" style="margin-top:16px;background:#111;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Guardar todos</button>
+  `
+}
+
+async function saveAllPipelineEntries(companyId, date) {
+  const { data: stages } = await sb.from('pipeline_stages').select('id').eq('company_id', companyId)
+  if (!stages) return
+
+  for (const s of stages) {
+    await savePipelineEntry(s.id, companyId, date, true)
+  }
+
+  const msg = document.getElementById('pipeline-save-msg')
+  msg.textContent = 'Guardado ✓'
+  setTimeout(() => { msg.textContent = '' }, 2000)
+  const { start, end } = getPeriodDates(period)
+  loadPipeline(start, end)
+}
+
+async function savePipelineEntry(stageId, companyId, date, silent = false) {
+  const input = document.getElementById(`pe-${stageId}`)
+  if (!input) return
+  const value = parseInt(input.value) || 0
+
+  // Apagar entradas existentes para este estágio+data e inserir valor novo
+  await sb.from('pipeline_entries').delete()
+    .eq('company_id', companyId).eq('stage_id', stageId).eq('date', date)
+
+  if (value > 0) {
+    await sb.from('pipeline_entries').insert({
+      company_id: companyId, stage_id: stageId, date, count: value, operator_id: profile.id
+    })
+  }
+
+  if (!silent) {
+    const msg = document.getElementById('pipeline-save-msg')
+    msg.textContent = 'Guardado ✓'
+    setTimeout(() => { msg.textContent = '' }, 1500)
+  }
+}
+
+// ============================================================
+// FATURAÇÃO
+// ============================================================
+async function loadAdminBilling() {
+  const sel = document.getElementById('billing-company-select')
+  sel.innerHTML = companies.map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('')
+  const monthInput = document.getElementById('billing-month')
+  if (!monthInput.value) {
+    const now = new Date()
+    monthInput.value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`
+  }
+  await loadBillingEntries()
+}
+
+async function loadBillingEntries() {
+  const companyId = document.getElementById('billing-company-select')?.value
+  if (!companyId) return
+
+  const { data } = await sb.from('billing_entries')
+    .select('*').eq('company_id', companyId).order('month', { ascending: false })
+
+  const container = document.getElementById('billing-history')
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--gray)">Sem registos.</div>'
+    return
+  }
+
+  container.innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border)">
+          <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Mês</th>
+          <th style="text-align:right;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Investimento</th>
+          <th style="text-align:right;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Retorno</th>
+          <th style="text-align:right;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">ROI</th>
+          <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Notas</th>
+          <th style="padding:8px 12px"></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(e => {
+          const month  = new Date(e.month + 'T12:00:00').toLocaleDateString('pt-PT', { month: 'long', year: 'numeric' })
+          const inv    = parseFloat(e.amount || 0)
+          const ret    = parseFloat(e.return_value || 0)
+          const roi    = inv > 0 ? Math.round(((ret - inv) / inv) * 100) : null
+          const fmtInv = inv.toLocaleString('pt-PT', { minimumFractionDigits: 0 }) + ' €'
+          const fmtRet = ret > 0 ? ret.toLocaleString('pt-PT', { minimumFractionDigits: 0 }) + ' €' : '—'
+          const fmtRoi = roi !== null ? roi + '%' : '—'
+          return `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px 12px;font-size:13px;font-weight:600">${month}</td>
+            <td style="padding:10px 12px;font-size:15px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-align:right">${fmtInv}</td>
+            <td style="padding:10px 12px;font-size:15px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-align:right;color:#065F46">${fmtRet}</td>
+            <td style="padding:10px 12px;font-size:15px;font-weight:700;font-family:'Barlow Condensed',sans-serif;text-align:right;color:#7C3AED">${fmtRoi}</td>
+            <td style="padding:10px 12px;font-size:13px;color:var(--gray)">${escHtml(e.notes || '')}</td>
+            <td style="padding:10px 12px;text-align:right">
+              <button onclick="deleteBillingEntry('${e.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+            </td>
+          </tr>`
+        }).join('')}
+      </tbody>
+    </table>`
+}
+
+async function saveBillingEntry() {
+  const companyId = document.getElementById('billing-company-select')?.value
+  const month     = document.getElementById('billing-month').value
+  const amount      = parseFloat(document.getElementById('billing-amount').value)
+  const returnValue = parseFloat(document.getElementById('billing-return-value').value) || 0
+  const notes       = document.getElementById('billing-notes').value.trim()
+
+  if (!companyId || !month || isNaN(amount)) {
+    document.getElementById('billing-save-msg').textContent = 'Preenche empresa, mês e investimento.'
+    return
+  }
+
+  await sb.from('billing_entries').upsert({
+    company_id:   companyId,
+    month:        month + '-01',
+    amount,
+    return_value: returnValue,
+    notes
+  }, { onConflict: 'company_id,month' })
+
+  document.getElementById('billing-amount').value       = ''
+  document.getElementById('billing-return-value').value = ''
+  document.getElementById('billing-notes').value        = ''
+  document.getElementById('billing-save-msg').textContent = 'Guardado ✓'
+  setTimeout(() => { document.getElementById('billing-save-msg').textContent = '' }, 2000)
+  await loadBillingEntries()
+  await loadBillingDashboard()
+}
+
+async function deleteBillingEntry(id) {
+  if (!confirm('Apagar este registo?')) return
+  await sb.from('billing_entries').delete().eq('id', id)
+  await loadBillingEntries()
+  await loadBillingDashboard()
+}
+
+async function loadBillingDashboard() {
+  if (!activeCompany) return
+
+  const { data } = await sb.from('billing_entries')
+    .select('month, amount, return_value').eq('company_id', activeCompany.id)
+    .order('month', { ascending: true })
+
+  if (!data || data.length === 0) {
+    document.getElementById('billing-total').textContent  = '0 €'
+    document.getElementById('billing-return').textContent = '—'
+    document.getElementById('billing-profit').textContent = '—'
+    document.getElementById('billing-roi').textContent    = '—'
+    return
+  }
+
+  const totalInv = data.reduce((s, e) => s + parseFloat(e.amount || 0), 0)
+  const totalRet = data.reduce((s, e) => s + parseFloat(e.return_value || 0), 0)
+  const profit   = totalRet - totalInv
+  const roi      = totalInv > 0 ? ((totalRet - totalInv) / totalInv * 100).toFixed(0) : null
+
+  const fmt = n => n.toLocaleString('pt-PT', { minimumFractionDigits: 0 }) + ' €'
+
+  document.getElementById('billing-total').textContent  = fmt(totalInv)
+  document.getElementById('billing-return').textContent = totalRet > 0 ? fmt(totalRet) : '—'
+  document.getElementById('billing-profit').textContent = totalRet > 0 ? fmt(profit) : '—'
+  document.getElementById('billing-roi').textContent    = roi !== null && totalRet > 0 ? roi + 'x' : '—'
+}
+
+// ============================================================
+// GRÁFICO DE EVOLUÇÃO
+// ============================================================
+let evolutionChart = null
+let chartDays = 30
+
+function setChartRange(days, btn) {
+  chartDays = days
+  document.querySelectorAll('#evolution-chart').forEach(() => {})
+  document.querySelectorAll('.section-header .period-tab').forEach(b => b.classList.remove('active'))
+  btn.classList.add('active')
+  loadEvolutionChart()
+}
+
+async function loadEvolutionChart() {
+  if (!activeCompany) return
+
+  const end   = new Date()
+  const start = new Date(Date.now() - chartDays * 86400000)
+  const startStr = start.toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+  const endStr   = end.toLocaleDateString('sv-SE',   { timeZone: 'Europe/Lisbon' })
+
+  const { data } = await sb.from('contact_messages')
+    .select('sent_at, delivered, responded_at')
+    .eq('company_id', activeCompany.id)
+    .gte('sent_at', startStr)
+    .lte('sent_at', endStr)
+    .order('sent_at', { ascending: true })
+
+  // Agregar por dia
+  const byDay = {}
+  for (const m of (data || [])) {
+    if (!byDay[m.sent_at]) byDay[m.sent_at] = { total: 0, responded: 0, delivered: 0 }
+    byDay[m.sent_at].total++
+    if (m.delivered)     byDay[m.sent_at].delivered++
+    if (m.responded_at)  byDay[m.sent_at].responded++
+  }
+
+  // Preencher todos os dias do intervalo (mesmo os sem dados)
+  const labels = []
+  const sent   = []
+  const txResp = []
+
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const key   = d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Lisbon' })
+    const label = d.toLocaleDateString('pt-PT', { day: '2-digit', month: 'short' })
+    const s     = byDay[key] || { total: 0, responded: 0 }
+    labels.push(label)
+    sent.push(s.total)
+    txResp.push(s.total > 0 ? Math.round(s.responded / s.total * 100) : null)
+  }
+
+  const ctx = document.getElementById('evolution-chart').getContext('2d')
+
+  if (evolutionChart) evolutionChart.destroy()
+
+  evolutionChart = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        {
+          type: 'bar',
+          label: 'Enviadas',
+          data: sent,
+          backgroundColor: 'rgba(124,58,237,0.15)',
+          borderColor: 'rgba(124,58,237,0.3)',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'yLeft'
+        },
+        {
+          type: 'line',
+          label: 'Taxa Resposta %',
+          data: txResp,
+          borderColor: '#059669',
+          backgroundColor: 'rgba(5,150,105,0.1)',
+          borderWidth: 2,
+          pointRadius: chartDays <= 30 ? 3 : 1,
+          pointBackgroundColor: '#059669',
+          tension: 0.3,
+          spanGaps: true,
+          yAxisID: 'yRight'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', labels: { font: { family: 'Barlow', size: 12 }, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label === 'Taxa Resposta %'
+              ? `Taxa Resposta: ${ctx.raw}%`
+              : `Enviadas: ${ctx.raw}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: 'Barlow', size: 10 }, maxTicksLimit: chartDays <= 14 ? 14 : chartDays <= 30 ? 15 : 12 }
+        },
+        yLeft: {
+          type: 'linear', position: 'left',
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { font: { family: 'Barlow', size: 11 } },
+          title: { display: true, text: 'Enviadas', font: { family: 'Barlow', size: 11 } }
+        },
+        yRight: {
+          type: 'linear', position: 'right',
+          min: 0, max: 100,
+          grid: { drawOnChartArea: false },
+          ticks: { font: { family: 'Barlow', size: 11 }, callback: v => v + '%' },
+          title: { display: true, text: 'Taxa %', font: { family: 'Barlow', size: 11 } }
+        }
+      }
+    }
+  })
+}
+
+// ============================================================
+async function openStagesModal(companyId, companyName) {
+  const { data: stages } = await sb.from('pipeline_stages').select('*').eq('company_id', companyId).order('position')
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">Stages — ${companyName}</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    ${(stages || []).map(s => `
+      <div class="modal-stage-item ${s.is_default ? 'is-default' : ''}">
+        <span>${escHtml(s.name)}</span>
+        ${s.is_default
+          ? '<span class="badge badge-admin">Fixo</span>'
+          : `<button class="btn-sm btn-sm-danger" onclick="deleteStage('${s.id}','${companyId}','${escHtml(companyName)}')">✕</button>`
+        }
+      </div>
+    `).join('')}
+    <div class="modal-add-row">
+      <input type="text" id="new-stage-input" placeholder="Nome do novo stage">
+      <button class="btn-primary" onclick="addStage('${companyId}','${escHtml(companyName)}',${(stages||[]).length})">Adicionar</button>
+    </div>
+  `
+  document.getElementById('modal').style.display = 'flex'
+}
+
+async function addStage(companyId, companyName, pos) {
+  const name = document.getElementById('new-stage-input').value.trim()
+  if (!name) return
+  await sb.from('pipeline_stages').insert({ company_id: companyId, name, position: pos + 1, is_default: false })
+  await openStagesModal(companyId, companyName)
+}
+
+async function deleteStage(stageId, companyId, companyName) {
+  await sb.from('pipeline_stages').delete().eq('id', stageId)
+  await openStagesModal(companyId, companyName)
+}
+
+// ============================================================
+// MODAL — USER COMPANIES
+// ============================================================
+async function openUserModal(userId, userName, userRole) {
+  const { data: all } = await sb.from('companies').select('*').order('name')
+
+  const table   = userRole === 'operator' ? 'operator_companies' : 'client_companies'
+  const idField = userRole === 'operator' ? 'operator_id'         : 'client_id'
+  const { data: assigned } = await sb.from(table).select('company_id').eq(idField, userId)
+  const assignedIds = (assigned || []).map(a => a.company_id)
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">Empresas — ${escHtml(userName)}</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="margin-bottom:8px;font-size:13px;color:var(--gray)">Seleciona as empresas que este utilizador pode ver</div>
+    ${(all || []).map(c => `
+      <label class="modal-company-item">
+        <input type="checkbox" value="${c.id}" ${assignedIds.includes(c.id) ? 'checked' : ''}
+          onchange="toggleUserCompany('${userId}','${userRole}','${c.id}',this.checked)">
+        ${escHtml(c.name)}
+      </label>
+    `).join('')}
+  `
+  document.getElementById('modal').style.display = 'flex'
+}
+
+async function toggleUserCompany(userId, userRole, companyId, checked) {
+  const table   = userRole === 'operator' ? 'operator_companies' : 'client_companies'
+  const idField = userRole === 'operator' ? 'operator_id'         : 'client_id'
+
+  if (checked) {
+    await sb.from(table).insert({ [idField]: userId, company_id: companyId })
+  } else {
+    await sb.from(table).delete().eq(idField, userId).eq('company_id', companyId)
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').style.display = 'none'
+}
+
+// ============================================================
+// UTILS
+// ============================================================
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+// ============================================================
+// CONTEXTO DO CLIENTE
+// ============================================================
+async function loadContext() {
+  if (!activeCompany) return
+  document.getElementById('context-company-name').textContent = `Contexto — ${activeCompany.name}`
+
+  const { data } = await sb.from('company_context')
+    .select('*').eq('company_id', activeCompany.id).single()
+
+  document.getElementById('ctx-sector').value    = data?.sector    || ''
+  document.getElementById('ctx-objective').value = data?.objective || ''
+  document.getElementById('ctx-target').value    = data?.target    || ''
+  document.getElementById('ctx-context').value   = data?.context   || ''
+}
+
+async function saveContext() {
+  if (!activeCompany) return
+  const msg = document.getElementById('ctx-save-msg')
+
+  const payload = {
+    company_id: activeCompany.id,
+    sector:     document.getElementById('ctx-sector').value.trim(),
+    objective:  document.getElementById('ctx-objective').value.trim(),
+    target:     document.getElementById('ctx-target').value.trim(),
+    context:    document.getElementById('ctx-context').value.trim(),
+    updated_at: new Date().toISOString()
+  }
+
+  const { error } = await sb.from('company_context')
+    .upsert(payload, { onConflict: 'company_id' })
+
+  if (error) {
+    msg.style.color = 'var(--red)'
+    msg.textContent = 'Erro ao guardar: ' + error.message
+  } else {
+    msg.style.color = 'var(--green)'
+    msg.textContent = '✓ Guardado com sucesso'
+    setTimeout(() => { msg.textContent = '' }, 3000)
+  }
+}
+
+// ============================================================
+// RELATÓRIO IA
+// ============================================================
+async function generateReport() {
+  if (!activeCompany) { alert('Selecciona uma empresa primeiro'); return }
+
+  const start = document.getElementById('report-start').value
+  const end   = document.getElementById('report-end').value
+  if (!start || !end) { alert('Selecciona as datas'); return }
+
+  const btn    = document.getElementById('btn-report')
+  const status = document.getElementById('report-status')
+  const result = document.getElementById('report-result')
+
+  btn.disabled    = true
+  btn.textContent = '✦ A gerar...'
+  status.textContent = 'A analisar conversas com IA, aguarda...'
+  result.style.display = 'none'
+
+  try {
+    const res  = await fetch(
+      `${SUPABASE_URL}/functions/v1/ai-report?company_id=${activeCompany.id}&location_id=${activeCompany.ghl_location_id || ''}&start_date=${start}&end_date=${end}`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    )
+    const data = await res.json()
+
+    if (data.error) { status.textContent = 'Erro: ' + data.error; return }
+
+    const s = data.stats
+    document.getElementById('report-stats').innerHTML = `
+      <div style="background:var(--light);border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Enviadas</div>
+        <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif">${s.total}</div>
+      </div>
+      <div style="background:#D1FAE5;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;font-weight:700;color:#065F46;text-transform:uppercase">Respondidas</div>
+        <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#065F46">${s.respondidas}</div>
+      </div>
+      <div style="background:#FEF3C7;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;font-weight:700;color:#92400E;text-transform:uppercase">Sem Resposta</div>
+        <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#92400E">${s.semResposta}</div>
+      </div>
+      <div style="background:#FEE2E2;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:11px;font-weight:700;color:#991B1B;text-transform:uppercase">Não Entregues</div>
+        <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#991B1B">${s.naoEntregues}</div>
+      </div>
+    `
+
+    // Alertas
+    const alertas = data.alertas || []
+    document.getElementById('report-alertas').innerHTML = alertas.length
+      ? alertas.map(a => `<div style="padding:10px 14px;border-radius:8px;background:var(--light);font-size:13px;font-weight:600;border-left:4px solid ${a.startsWith('🔴') ? 'var(--red)' : a.startsWith('🟡') ? 'var(--yellow)' : 'var(--green)'}">${escHtml(a)}</div>`).join('')
+      : ''
+    document.getElementById('report-alertas').style.display = alertas.length ? 'flex' : 'none'
+
+    document.getElementById('report-text').textContent = data.relatorio
+    const label = start === end ? start : `${start} → ${end}`
+    document.getElementById('report-pdf-title').textContent = `${activeCompany.name} · ${label}`
+    result.style.display = 'block'
+    status.textContent = ''
+
+    // Guardar relatório
+    await sb.from('reports').insert({
+      company_id: activeCompany.id,
+      start_date: start,
+      end_date:   end,
+      stats:      data.stats,
+      alertas:    data.alertas || [],
+      relatorio:  data.relatorio
+    })
+    loadReportHistory()
+  } catch (e) {
+    status.textContent = 'Erro ao gerar relatório'
+  }
+
+  btn.disabled    = false
+  btn.textContent = '✦ Gerar Relatório'
+}
+
+async function loadReportHistory() {
+  if (!activeCompany) return
+  const { data } = await sb.from('reports')
+    .select('id,start_date,end_date,stats,alertas,relatorio,created_at')
+    .eq('company_id', activeCompany.id)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  const container = document.getElementById('report-history')
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--gray)">Nenhum relatório guardado.</div>'
+    return
+  }
+
+  window._reportHistory = data
+  container.innerHTML = data.map((r, i) => {
+    const label = r.start_date === r.end_date ? r.start_date : `${r.start_date} → ${r.end_date}`
+    const ts    = new Date(r.created_at).toLocaleString('pt-PT', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+    const total = r.stats?.total ?? '—'
+    const resp  = r.stats?.respondidas ?? '—'
+    return `<div onclick="viewSavedReport(${i})" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px;background:var(--light);cursor:pointer;transition:opacity .15s" onmouseover="this.style.opacity='.75'" onmouseout="this.style.opacity='1'">
+      <div>
+        <div style="font-size:13px;font-weight:700">${label}</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:2px">${ts} · ${total} enviadas · ${resp} respondidas</div>
+      </div>
+      <div style="font-size:11px;color:var(--gray)">▶</div>
+    </div>`
+  }).join('')
+}
+
+function viewSavedReport(i) {
+  const r = window._reportHistory[i]
+  const s = r.stats || {}
+  document.getElementById('report-stats').innerHTML = `
+    <div style="background:var(--light);border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Enviadas</div>
+      <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif">${s.total ?? 0}</div>
+    </div>
+    <div style="background:#D1FAE5;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:#065F46;text-transform:uppercase">Respondidas</div>
+      <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#065F46">${s.respondidas ?? 0}</div>
+    </div>
+    <div style="background:#FEF3C7;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:#92400E;text-transform:uppercase">Sem Resposta</div>
+      <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#92400E">${s.semResposta ?? 0}</div>
+    </div>
+    <div style="background:#FEE2E2;border-radius:8px;padding:12px;text-align:center">
+      <div style="font-size:11px;font-weight:700;color:#991B1B;text-transform:uppercase">Não Entregues</div>
+      <div style="font-size:32px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#991B1B">${s.naoEntregues ?? 0}</div>
+    </div>
+  `
+  const alertas = r.alertas || []
+  document.getElementById('report-alertas').innerHTML = alertas.length
+    ? alertas.map(a => `<div style="padding:10px 14px;border-radius:8px;background:var(--light);font-size:13px;font-weight:600;border-left:4px solid ${a.startsWith('🔴') ? 'var(--red)' : a.startsWith('🟡') ? 'var(--yellow)' : 'var(--green)'}">${escHtml(a)}</div>`).join('')
+    : ''
+  document.getElementById('report-alertas').style.display = alertas.length ? 'flex' : 'none'
+  document.getElementById('report-text').textContent = r.relatorio || ''
+  const label = r.start_date === r.end_date ? r.start_date : `${r.start_date} → ${r.end_date}`
+  document.getElementById('report-pdf-title').textContent = `${activeCompany.name} · ${label}`
+  document.getElementById('report-result').style.display = 'block'
+  document.getElementById('report-result').scrollIntoView({ behavior: 'smooth' })
+}
+
+function downloadReportPDF() {
+  const title = document.getElementById('report-pdf-title').textContent || 'relatorio'
+  const el    = document.getElementById('report-pdf-area')
+  const btn   = el.querySelector('button')
+  btn.style.display = 'none'
+  html2pdf().set({
+    margin:      [12, 12, 12, 12],
+    filename:    `${title.replace(/[·→ ]+/g, '_')}.pdf`,
+    image:       { type: 'jpeg', quality: 0.97 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(el).save().then(() => { btn.style.display = '' })
+}
+
+// ============================================================
+// AGENTE IA
+// ============================================================
+let agentHistory = []
+
+function initAgent() {
+  if (!activeCompany) return
+  document.getElementById('agent-company-name').textContent = `A falar sobre: ${activeCompany.name}`
+  if (agentHistory.length === 0) {
+    agentHistory = []
+    renderAgentMessages()
+    agentAppendMessage('assistant', `Olá! Estou pronto para analisar os dados da **${activeCompany.name}**. Podes perguntar sobre o desempenho de um dia específico, taxas de resposta, alertas, sugestões de melhoria — o que precisares.`)
+  }
+}
+
+function agentAppendMessage(role, text) {
+  agentHistory.push({ role, content: text })
+  renderAgentMessages()
+}
+
+function renderAgentMessages() {
+  const container = document.getElementById('agent-messages')
+  if (!container) return
+  if (agentHistory.length === 0) {
+    container.innerHTML = '<div style="font-size:13px;color:var(--gray);text-align:center;margin-top:40px">Faz uma pergunta para começar.</div>'
+    return
+  }
+  container.innerHTML = agentHistory.map(m => {
+    const isUser = m.role === 'user'
+    const align  = isUser ? 'flex-end' : 'flex-start'
+    const radius = isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px'
+
+    if (m.content === '__typing__') {
+      return `<div style="display:flex;justify-content:flex-start">
+        <div style="background:var(--light);border-radius:${radius};padding:10px 16px;font-size:20px;line-height:1;letter-spacing:2px">
+          <span style="animation:blink 1s infinite">●</span><span style="animation:blink 1s infinite .2s">●</span><span style="animation:blink 1s infinite .4s">●</span>
+        </div>
+      </div>`
+    }
+
+    const bg    = isUser ? '#7C3AED' : 'var(--light)'
+    const color = isUser ? '#fff' : '#111'
+    const text  = escHtml(m.content).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')
+    return `<div style="display:flex;justify-content:${align}">
+      <div style="max-width:80%;background:${bg};color:${color};border-radius:${radius};padding:10px 14px;font-size:13px;line-height:1.6">${text}</div>
+    </div>`
+  }).join('')
+  container.scrollTop = container.scrollHeight
+}
+
+async function agentSend() {
+  if (!activeCompany) { alert('Selecciona uma empresa primeiro'); return }
+  const input = document.getElementById('agent-input')
+  const msg   = input.value.trim()
+  if (!msg) return
+
+  input.value = ''
+
+  // Guardar histórico actual para enviar (sem a nova mensagem) — últimas 20 trocas
+  const historyToSend = agentHistory.slice(-20)
+
+  // Mostrar mensagem do utilizador
+  agentHistory.push({ role: 'user', content: msg })
+  renderAgentMessages()
+
+  // Mostrar indicador de "a pensar"
+  agentHistory.push({ role: 'assistant', content: '__typing__' })
+  renderAgentMessages()
+
+  const btn = document.getElementById('btn-agent-send')
+  btn.disabled    = true
+  btn.textContent = 'A pensar...'
+
+  try {
+    const res  = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
+      method:  'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ company_id: activeCompany.id, message: msg, history: historyToSend })
+    })
+    const data = await res.json()
+    agentHistory.pop() // remove __typing__
+    agentHistory.push({ role: 'assistant', content: data.error ? 'Erro: ' + data.error : data.reply })
+    renderAgentMessages()
+  } catch (e) {
+    agentHistory.pop() // remove __typing__
+    agentHistory.push({ role: 'assistant', content: 'Erro de ligação. Tenta novamente.' })
+    renderAgentMessages()
+  }
+
+  btn.disabled    = false
+  btn.textContent = 'Enviar'
+}
+
+async function openReportModal() {
+  if (!activeCompany) { alert('Selecciona uma empresa primeiro'); return }
+
+  const { start, end } = getPeriodDates(period)
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">✦ Relatório IA — ${start === end ? start : start + ' a ' + end}</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="report-body" style="font-size:14px;line-height:1.7;color:#111">
+      <div class="loading">A analisar conversas com IA...</div>
+    </div>
+  `
+  document.getElementById('modal').style.display = 'flex'
+
+  try {
+    const res  = await fetch(
+      `${SUPABASE_URL}/functions/v1/ai-report?company_id=${activeCompany.id}&location_id=${activeCompany.ghl_location_id || ''}&start_date=${start}&end_date=${end}`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    )
+    const data = await res.json()
+
+    if (data.error) {
+      document.getElementById('report-body').innerHTML = `<div style="color:var(--red)">${data.error}</div>`
+      return
+    }
+
+    const s = data.stats
+    document.getElementById('report-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">
+        <div style="background:var(--light);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Enviadas</div>
+          <div style="font-size:28px;font-weight:900;font-family:'Barlow Condensed',sans-serif">${s.total}</div>
+        </div>
+        <div style="background:#D1FAE5;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:#065F46;text-transform:uppercase">Respondidas</div>
+          <div style="font-size:28px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#065F46">${s.respondidas}</div>
+        </div>
+        <div style="background:#FEF3C7;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:#92400E;text-transform:uppercase">Sem Resposta</div>
+          <div style="font-size:28px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#92400E">${s.semResposta}</div>
+        </div>
+        <div style="background:#FEE2E2;border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:11px;font-weight:700;color:#991B1B;text-transform:uppercase">Não Entregues</div>
+          <div style="font-size:28px;font-weight:900;font-family:'Barlow Condensed',sans-serif;color:#991B1B">${s.naoEntregues}</div>
+        </div>
+      </div>
+      <div style="white-space:pre-wrap;background:var(--light);border-radius:8px;padding:20px;font-size:13px;line-height:1.8">${escHtml(data.relatorio)}</div>
+    `
+  } catch (e) {
+    document.getElementById('report-body').innerHTML = `<div style="color:var(--red)">Erro ao gerar relatório</div>`
+  }
+}
+
+// ============================================================
+// SYNC
+// ============================================================
+async function runSync() {
+  if (!activeCompany) { alert('Selecciona uma empresa primeiro'); return }
+
+  const btn    = document.getElementById('btn-sync')
+  const status = document.getElementById('sync-status')
+  btn.disabled = true
+  btn.textContent = '↻ A sincronizar...'
+
+  const COMPANY_ID  = activeCompany.id
+  const LOCATION_ID = activeCompany.ghl_location_id || ''
+  const START_DATE  = '2026-05-31'
+  const BASE_URL    = `${SUPABASE_URL}/functions/v1/ghl-sync`
+
+  let cursor = null
+  let batch  = 1
+  let total  = 0
+  let done   = false
+
+  while (!done) {
+    status.textContent = `Lote ${batch}... (${total} registos)`
+    try {
+      let url = `${BASE_URL}?company_id=${COMPANY_ID}&location_id=${LOCATION_ID}&start_date=${START_DATE}`
+      if (cursor) url += `&cursor=${cursor}`
+
+      const res  = await fetch(url, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      })
+      const data = await res.json()
+
+      total += data.processed || 0
+      cursor = data.nextCursor || null
+
+      status.textContent = `Lote ${batch} — ${total} registos importados`
+
+      if (!data.hasMore || !cursor) done = true
+      else batch++
+    } catch (e) {
+      status.textContent = 'Erro no lote ' + batch
+      done = true
+    }
+  }
+
+  btn.disabled = false
+  btn.textContent = '↻ Sincronizar'
+  status.textContent = `✓ Concluído — ${total} registos importados`
+  await loadDashboard()
+}
+
+// ============================================================
+// WHATSAPP ADMIN CONFIG
+// ============================================================
+async function loadWaConfig() {
+  const companyId = document.getElementById('wa-company-select')?.value
+  if (!companyId) return
+  const { data } = await sb.from('companies').select('wa_phone_id,wa_waba_id,wa_token,wa_verify_token,wa_phone_number').eq('id', companyId).single()
+  if (!data) return
+  document.getElementById('wa-phone-id').value      = data.wa_phone_id || ''
+  document.getElementById('wa-waba-id').value       = data.wa_waba_id || ''
+  document.getElementById('wa-token').value         = data.wa_token || ''
+  document.getElementById('wa-verify-token').value  = data.wa_verify_token || ''
+  document.getElementById('wa-phone-number').value  = data.wa_phone_number || ''
+}
+
+async function saveWaConfig() {
+  const companyId = document.getElementById('wa-company-select')?.value
+  if (!companyId) return
+  const msg = document.getElementById('wa-save-msg')
+  await sb.from('companies').update({
+    wa_phone_id:     document.getElementById('wa-phone-id').value.trim(),
+    wa_waba_id:      document.getElementById('wa-waba-id').value.trim(),
+    wa_token:        document.getElementById('wa-token').value.trim(),
+    wa_verify_token: document.getElementById('wa-verify-token').value.trim(),
+    wa_phone_number: document.getElementById('wa-phone-number').value.trim(),
+  }).eq('id', companyId)
+  msg.style.color = 'var(--green)'; msg.textContent = '✓ Guardado'
+  setTimeout(() => { msg.textContent = '' }, 2500)
+}
+
+async function testWaConnection() {
+  const companyId = document.getElementById('wa-company-select')?.value
+  if (!companyId) return
+  const msg = document.getElementById('wa-save-msg')
+  msg.style.color = 'var(--gray)'; msg.textContent = 'A testar...'
+  try {
+    const res  = await fetch(`${SUPABASE_URL}/functions/v1/whatsapp-send`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_id: companyId, action: 'test' })
+    })
+    const data = await res.json()
+    if (data.ok) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Ligação OK — ' + (data.display_phone || '') }
+    else { msg.style.color = 'var(--red)'; msg.textContent = 'Erro: ' + (data.error || 'Falha') }
+  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erro de ligação' }
+}
+
+function copyWaWebhookUrl() {
+  const url = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('[onclick="copyWaWebhookUrl()"]')
+    if (btn) { btn.textContent = 'Copiado ✓'; setTimeout(() => { btn.textContent = 'Copiar' }, 2000) }
+  })
+}
+
+// Carregar empresas na aba WhatsApp quando se abre
+const _origSwitchAdminTab = switchAdminTab
+function switchAdminTab(name, btn) {
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'))
+  document.getElementById(`admin-${name}`).classList.add('active')
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'))
+  btn.classList.add('active')
+  if (name === 'stages')    loadAdminStages()
+  if (name === 'billing')   loadAdminBilling()
+  if (name === 'whatsapp')  loadAdminWhatsapp()
+}
+
+async function loadAdminWhatsapp() {
+  const sel = document.getElementById('wa-company-select')
+  if (!sel) return
+  const { data } = await sb.from('companies').select('id,name').order('name')
+  sel.innerHTML = (data || []).map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('')
+  await loadWaConfig()
+  // Mostrar URL do webhook
+  document.getElementById('wa-webhook-url').textContent = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`
+}
+
+// ============================================================
+// LEADS
+// ============================================================
+let allLeads = []
+
+async function loadLeads() {
+  if (!activeCompany) return
+  document.getElementById('leads-company-name').textContent = `Leads — ${activeCompany.name}`
+
+  const { data } = await sb.from('leads')
+    .select('*')
+    .eq('company_id', activeCompany.id)
+    .order('created_at', { ascending: false })
+    .limit(2000)
+
+  allLeads = data || []
+  document.getElementById('leads-search').value = ''
+  document.getElementById('leads-status-filter').value = ''
+  renderLeadsTable(allLeads)
+}
+
+function filterLeads() {
+  const q      = document.getElementById('leads-search').value.toLowerCase()
+  const status = document.getElementById('leads-status-filter').value
+  const filtered = allLeads.filter(l => {
+    const matchText = !q || (l.name || '').toLowerCase().includes(q) || (l.phone || '').includes(q)
+    const matchStatus = !status || l.status === status
+    return matchText && matchStatus
+  })
+  renderLeadsTable(filtered)
+}
+
+function renderLeadsTable(data) {
+  const container = document.getElementById('leads-table-container')
+  document.getElementById('leads-count').textContent = `${data.length} leads`
+
+  if (!data.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-icon">👥</div><div class="empty-text">Nenhum lead encontrado</div><div class="empty-sub">Importa um CSV para começar</div></div>'
+    return
+  }
+
+  const statusLabel = { new:'Novo', sent:'Enviado', delivered:'Entregue', responded:'Respondeu', converted:'Convertido', unsubscribed:'Opt-out' }
+
+  container.innerHTML = `
+    <table class="leads-table">
+      <thead><tr>
+        <th>Nome</th><th>Telefone</th><th>Estado</th><th>Campanha</th><th>Criado</th><th></th>
+      </tr></thead>
+      <tbody>
+        ${data.map(l => `<tr>
+          <td style="font-weight:600">${escHtml(l.name || '—')}</td>
+          <td style="font-family:monospace">${escHtml(l.phone || '—')}</td>
+          <td><span class="tag status-${l.status || 'new'}">${statusLabel[l.status] || l.status || 'Novo'}</span></td>
+          <td style="color:var(--gray)">${escHtml(l.campaign_name || '—')}</td>
+          <td style="color:var(--gray)">${l.created_at ? l.created_at.split('T')[0] : '—'}</td>
+          <td><button onclick="deleteLead('${l.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:2px 6px">✕</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+}
+
+async function deleteLead(id) {
+  if (!confirm('Apagar este lead?')) return
+  await sb.from('leads').delete().eq('id', id)
+  await loadLeads()
+}
+
+function exportLeadsCSV() {
+  if (!allLeads.length) return
+  const header = 'Nome,Telefone,Estado,Campanha,Criado'
+  const rows   = allLeads.map(l => `"${l.name||''}","${l.phone||''}","${l.status||''}","${l.campaign_name||''}","${(l.created_at||'').split('T')[0]}"`)
+  const blob   = new Blob([header + '\n' + rows.join('\n')], { type: 'text/csv;charset=utf-8;' })
+  const url    = URL.createObjectURL(blob)
+  const a      = document.createElement('a'); a.href = url; a.download = 'leads.csv'; a.click()
+  URL.revokeObjectURL(url)
+}
+
+// ── IMPORT CSV MODAL
+function openImportModal() {
+  if (!activeCompany) { alert('Selecciona uma empresa primeiro'); return }
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">Importar Leads — ${escHtml(activeCompany.name)}</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div style="font-size:13px;color:var(--gray);margin-bottom:16px">
+      O CSV deve ter pelo menos as colunas <strong>telefone</strong> (obrigatório) e <strong>nome</strong> (opcional). A primeira linha é o cabeçalho.
+    </div>
+
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Campanha (opcional)</div>
+      <input type="text" id="import-campaign" placeholder="Ex: Reativação Junho 2026"
+        style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+    </div>
+
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file').click()"
+      ondragover="event.preventDefault();this.classList.add('dragover')"
+      ondragleave="this.classList.remove('dragover')"
+      ondrop="handleFileDrop(event)">
+      <div class="drop-zone-icon">📂</div>
+      <div class="drop-zone-text">Arrasta o CSV aqui ou clica para selecionar</div>
+      <div class="drop-zone-sub">Ficheiros .csv e .txt suportados</div>
+      <input type="file" id="csv-file" accept=".csv,.txt" style="display:none" onchange="handleFileSelect(this)">
+    </div>
+
+    <div id="import-preview" style="margin-top:16px"></div>
+    <div id="import-status" style="font-size:13px;margin-top:12px;min-height:18px"></div>
+  `
+  document.getElementById('modal').style.display = 'flex'
+}
+
+function handleFileDrop(e) {
+  e.preventDefault()
+  document.getElementById('drop-zone').classList.remove('dragover')
+  const file = e.dataTransfer.files[0]
+  if (file) processCSVFile(file)
+}
+
+function handleFileSelect(input) {
+  const file = input.files[0]
+  if (file) processCSVFile(file)
+}
+
+let parsedLeads = []
+
+function processCSVFile(file) {
+  const reader = new FileReader()
+  reader.onload = e => {
+    const text  = e.target.result
+    const lines = text.split(/\r?\n/).filter(l => l.trim())
+    if (lines.length < 2) { document.getElementById('import-status').textContent = 'Ficheiro vazio ou sem dados.'; return }
+
+    const header = lines[0].split(/[,;]/).map(h => h.trim().toLowerCase().replace(/['"]/g,''))
+    const phoneIdx = header.findIndex(h => ['telefone','phone','tel','numero','número','mobile','celular','contact'].includes(h))
+    const nameIdx  = header.findIndex(h => ['nome','name','cliente','contact name','contacto'].includes(h))
+
+    if (phoneIdx === -1) {
+      document.getElementById('import-status').innerHTML = '<span style="color:var(--red)">Coluna "telefone" não encontrada. Colunas detectadas: ' + escHtml(header.join(', ')) + '</span>'
+      return
+    }
+
+    parsedLeads = []
+    for (let i = 1; i < lines.length; i++) {
+      const cols  = lines[i].split(/[,;]/).map(c => c.trim().replace(/^["']|["']$/g,''))
+      const phone = cols[phoneIdx]?.replace(/\s+/g,'')
+      if (!phone) continue
+      const name = nameIdx >= 0 ? cols[nameIdx] : ''
+      parsedLeads.push({ phone, name })
+    }
+
+    const previewRows = parsedLeads.slice(0, 5)
+    document.getElementById('import-preview').innerHTML = `
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:#111">${parsedLeads.length} leads encontrados — pré-visualização:</div>
+      <table class="leads-table" style="border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <thead><tr><th>Nome</th><th>Telefone</th></tr></thead>
+        <tbody>${previewRows.map(l => `<tr><td>${escHtml(l.name||'—')}</td><td style="font-family:monospace">${escHtml(l.phone)}</td></tr>`).join('')}</tbody>
+      </table>
+      ${parsedLeads.length > 5 ? `<div style="font-size:12px;color:var(--gray);margin-top:6px">... e mais ${parsedLeads.length - 5}</div>` : ''}
+      <button onclick="confirmImport()" style="margin-top:16px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:800;font-family:Barlow,sans-serif;cursor:pointer">
+        Importar ${parsedLeads.length} leads
+      </button>
+    `
+    document.getElementById('import-status').textContent = ''
+  }
+  reader.readAsText(file, 'UTF-8')
+}
+
+async function confirmImport() {
+  if (!parsedLeads.length || !activeCompany) return
+  const campaignName = document.getElementById('import-campaign').value.trim() || null
+  const status       = document.getElementById('import-status')
+  status.style.color = 'var(--gray)'; status.textContent = 'A importar...'
+
+  const rows = parsedLeads.map(l => ({
+    company_id:    activeCompany.id,
+    phone:         l.phone,
+    name:          l.name || null,
+    status:        'new',
+    campaign_name: campaignName,
+  }))
+
+  // Importar em lotes de 200
+  let imported = 0
+  for (let i = 0; i < rows.length; i += 200) {
+    const batch = rows.slice(i, i + 200)
+    await sb.from('leads').upsert(batch, { onConflict: 'company_id,phone', ignoreDuplicates: true })
+    imported += batch.length
+    status.textContent = `A importar... ${Math.min(imported, rows.length)}/${rows.length}`
+  }
+
+  status.style.color = 'var(--green)'; status.textContent = `✓ ${rows.length} leads importados com sucesso!`
+  parsedLeads = []
+  setTimeout(() => { closeModal(); loadLeads() }, 1500)
+}
+
+// ============================================================
+// CAMPANHAS
+// ============================================================
+async function loadCampaigns() {
+  if (!activeCompany) return
+  const { data } = await sb.from('campaigns')
+    .select('*, campaign_sends(count)')
+    .eq('company_id', activeCompany.id)
+    .order('created_at', { ascending: false })
+
+  const container = document.getElementById('campaigns-list-container')
+
+  if (!data || !data.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🚀</div><div class="empty-text">Nenhuma campanha criada</div><div class="empty-sub">Cria a tua primeira campanha de WhatsApp</div></div>`
+    return
+  }
+
+  const statusLabel = { draft:'Rascunho', scheduled:'Agendada', running:'A enviar', done:'Concluída', paused:'Pausada' }
+  const statusColor = { draft:'var(--gray)', scheduled:'var(--blue)', running:'var(--green)', done:'#111', paused:'var(--yellow)' }
+
+  container.innerHTML = data.map(c => {
+    const total     = c.total_leads || 0
+    const sent      = c.sent_count  || 0
+    const responded = c.responded_count || 0
+    const rate      = sent > 0 ? Math.round(responded / sent * 100) : 0
+    return `
+    <div class="campaign-card">
+      <div class="campaign-card-header">
+        <div>
+          <div class="campaign-name">${escHtml(c.name)}</div>
+          <div class="campaign-meta">${c.template_name ? 'Template: ' + escHtml(c.template_name) + ' · ' : ''}Criada ${c.created_at?.split('T')[0] || '—'}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;font-weight:800;padding:4px 12px;border-radius:20px;background:var(--light);color:${statusColor[c.status]||'var(--gray)'}">
+            ${statusLabel[c.status] || c.status}
+          </span>
+          ${c.status === 'draft' ? `<button onclick="startCampaign('${c.id}')" style="background:var(--gold);color:var(--navy);border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:800;font-family:Barlow,sans-serif;cursor:pointer">▶ Iniciar</button>` : ''}
+          ${c.status === 'running' ? `<button onclick="pauseCampaign('${c.id}')" style="background:var(--yellow);color:#111;border:none;border-radius:8px;padding:7px 14px;font-size:13px;font-weight:800;font-family:Barlow,sans-serif;cursor:pointer">⏸ Pausar</button>` : ''}
+          <button onclick="deleteCampaign('${c.id}')" style="background:none;border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:13px;cursor:pointer;color:var(--red)">✕</button>
+        </div>
+      </div>
+      <div class="campaign-stats">
+        <div class="campaign-stat"><div class="campaign-stat-value">${total}</div><div class="campaign-stat-label">Leads</div></div>
+        <div class="campaign-stat"><div class="campaign-stat-value">${sent}</div><div class="campaign-stat-label">Enviados</div></div>
+        <div class="campaign-stat"><div class="campaign-stat-value" style="color:var(--green)">${responded}</div><div class="campaign-stat-label">Responderam</div></div>
+        <div class="campaign-stat"><div class="campaign-stat-value" style="color:var(--green)">${rate}%</div><div class="campaign-stat-label">Taxa Resp.</div></div>
+      </div>
+    </div>`
+  }).join('')
+}
+
+function openNewCampaignModal() {
+  if (!activeCompany) { alert('Selecciona uma empresa primeiro'); return }
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">Nova Campanha</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div style="display:grid;gap:14px">
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Nome da Campanha <span style="color:var(--red)">*</span></div>
+        <input type="text" id="camp-name" placeholder="Ex: Reativação Junho 2026"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Template WhatsApp <span style="color:var(--red)">*</span></div>
+        <input type="text" id="camp-template" placeholder="Nome exacto do template aprovado pela Meta (ex: reativacao_clientes)"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+        <div style="font-size:11px;color:var(--gray);margin-top:4px">O template tem de estar aprovado no WhatsApp Business Manager</div>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Idioma do Template</div>
+        <select id="camp-lang" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;width:100%">
+          <option value="pt_PT">Português (PT)</option>
+          <option value="pt_BR">Português (BR)</option>
+          <option value="en_US">Inglês (US)</option>
+          <option value="es">Espanhol</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Filtrar leads por campanha (CSV)</div>
+        <input type="text" id="camp-filter" placeholder="Deixa em branco para todos os leads 'Novo' da empresa"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+      </div>
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Intervalo entre mensagens (segundos)</div>
+        <input type="number" id="camp-delay" value="5" min="2" max="60"
+          style="width:120px;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+        <div style="font-size:11px;color:var(--gray);margin-top:4px">Mínimo 2s recomendado para não ser marcado como spam</div>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+      <button onclick="closeModal()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;color:var(--gray)">Cancelar</button>
+      <button onclick="createCampaign()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Criar Campanha</button>
+    </div>
+    <div id="camp-create-msg" style="font-size:13px;margin-top:10px;min-height:18px"></div>
+  `
+  document.getElementById('modal').style.display = 'flex'
+}
+
+async function createCampaign() {
+  const name         = document.getElementById('camp-name').value.trim()
+  const templateName = document.getElementById('camp-template').value.trim()
+  const lang         = document.getElementById('camp-lang').value
+  const filter       = document.getElementById('camp-filter').value.trim() || null
+  const delay        = parseInt(document.getElementById('camp-delay').value) || 5
+  const msg          = document.getElementById('camp-create-msg')
+
+  if (!name || !templateName) { msg.style.color='var(--red)'; msg.textContent='Preenche o nome e o template.'; return }
+
+  // Contar leads elegíveis
+  let q = sb.from('leads').select('id', { count: 'exact', head: true }).eq('company_id', activeCompany.id).eq('status', 'new')
+  if (filter) q = q.eq('campaign_name', filter)
+  const { count } = await q
+
+  const { error } = await sb.from('campaigns').insert({
+    company_id:    activeCompany.id,
+    name,
+    template_name: templateName,
+    template_lang: lang,
+    campaign_filter: filter,
+    delay_seconds: delay,
+    status:        'draft',
+    total_leads:   count || 0,
+    sent_count:    0,
+    responded_count: 0,
+  })
+
+  if (error) { msg.style.color='var(--red)'; msg.textContent='Erro: '+error.message; return }
+
+  closeModal()
+  await loadCampaigns()
+}
+
+async function startCampaign(campaignId) {
+  if (!confirm('Iniciar envio da campanha? As mensagens serão enviadas via WhatsApp Business API.')) return
+  await sb.from('campaigns').update({ status: 'running' }).eq('id', campaignId)
+
+  // Chamar a edge function de envio
+  fetch(`${SUPABASE_URL}/functions/v1/whatsapp-send`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ company_id: activeCompany.id, campaign_id: campaignId, action: 'send_campaign' })
+  })
+
+  await loadCampaigns()
+}
+
+async function pauseCampaign(campaignId) {
+  await sb.from('campaigns').update({ status: 'paused' }).eq('id', campaignId)
+  await loadCampaigns()
+}
+
+async function deleteCampaign(id) {
+  if (!confirm('Apagar esta campanha?')) return
+  await sb.from('campaigns').delete().eq('id', id)
+  await loadCampaigns()
+}
+
+// ============================================================
+// INBOX
+// ============================================================
+let allThreads    = []
+let activeThread  = null
+
+async function loadInbox() {
+  if (!activeCompany) return
+
+  const { data } = await sb.from('wa_messages')
+    .select('*')
+    .eq('company_id', activeCompany.id)
+    .eq('direction', 'in')
+    .order('created_at', { ascending: false })
+    .limit(500)
+
+  // Agrupar por lead (phone)
+  const threadsMap = {}
+  for (const m of (data || [])) {
+    if (!threadsMap[m.lead_phone]) {
+      threadsMap[m.lead_phone] = { phone: m.lead_phone, name: m.lead_name || m.lead_phone, messages: [], unread: false, last_at: m.created_at }
+    }
+    threadsMap[m.lead_phone].messages.push(m)
+    if (!m.read_at) threadsMap[m.lead_phone].unread = true
+  }
+
+  allThreads = Object.values(threadsMap).sort((a, b) => new Date(b.last_at) - new Date(a.last_at))
+  renderInboxThreads(allThreads)
+  updateInboxBadge()
+}
+
+function renderInboxThreads(threads) {
+  const container = document.getElementById('inbox-threads')
+  if (!threads.length) {
+    container.innerHTML = '<div style="padding:24px;text-align:center;color:var(--gray);font-size:13px">Nenhuma resposta recebida ainda</div>'
+    return
+  }
+  container.innerHTML = threads.map(t => `
+    <div class="inbox-thread ${t.unread ? 'unread' : ''} ${activeThread?.phone === t.phone ? 'active' : ''}"
+      onclick="openThread('${t.phone}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="inbox-thread-name">${escHtml(t.name)}</div>
+        <div class="inbox-thread-time">${formatDate(t.last_at?.split('T')[0])}</div>
+      </div>
+      <div class="inbox-thread-preview">${escHtml((t.messages[0]?.body || '').substring(0, 60))}</div>
+      ${t.unread ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--green);margin-top:4px"></div>' : ''}
+    </div>
+  `).join('')
+}
+
+function filterInbox() {
+  const q = document.getElementById('inbox-search').value.toLowerCase()
+  const filtered = allThreads.filter(t => t.name.toLowerCase().includes(q) || t.phone.includes(q))
+  renderInboxThreads(filtered)
+}
+
+async function openThread(phone) {
+  activeThread = allThreads.find(t => t.phone === phone)
+  if (!activeThread) return
+
+  // Marcar como lido
+  await sb.from('wa_messages').update({ read_at: new Date().toISOString() })
+    .eq('company_id', activeCompany.id).eq('lead_phone', phone).is('read_at', null)
+  activeThread.unread = false
+  updateInboxBadge()
+
+  document.getElementById('inbox-chat-name').textContent = activeThread.name + ' · ' + activeThread.phone
+  document.getElementById('inbox-chat-actions').style.display = 'flex'
+  document.getElementById('inbox-reply-bar').style.display = 'flex'
+
+  // Carregar todos os msgs desta conversa (in + out)
+  const { data } = await sb.from('wa_messages')
+    .select('*')
+    .eq('company_id', activeCompany.id)
+    .eq('lead_phone', phone)
+    .order('created_at', { ascending: true })
+
+  const chatEl = document.getElementById('inbox-chat-messages')
+  chatEl.innerHTML = (data || []).map(m => `
+    <div style="display:flex;justify-content:${m.direction === 'out' ? 'flex-end' : 'flex-start'}">
+      <div class="chat-msg chat-msg-${m.direction === 'out' ? 'out' : 'in'}">
+        ${escHtml(m.body || '')}
+        <div class="chat-msg-time">${m.created_at ? new Date(m.created_at).toLocaleTimeString('pt-PT', { hour:'2-digit', minute:'2-digit' }) : ''} ${m.direction === 'out' ? (m.delivered ? '✓✓' : '✓') : ''}</div>
+      </div>
+    </div>
+  `).join('')
+  chatEl.scrollTop = chatEl.scrollHeight
+
+  renderInboxThreads(allThreads)
+}
+
+async function sendInboxReply() {
+  if (!activeThread || !activeCompany) return
+  const input = document.getElementById('inbox-reply-input')
+  const body  = input.value.trim()
+  if (!body) return
+
+  input.value = ''
+  const btn = document.querySelector('[onclick="sendInboxReply()"]')
+  btn.disabled = true
+
+  try {
+    const res  = await fetch(`${SUPABASE_URL}/functions/v1/whatsapp-send`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company_id: activeCompany.id,
+        action:     'send_text',
+        to:         activeThread.phone,
+        body
+      })
+    })
+    const data = await res.json()
+    if (data.error) { alert('Erro: ' + data.error); input.value = body }
+    else await openThread(activeThread.phone)
+  } catch(e) { alert('Erro de ligação'); input.value = body }
+
+  btn.disabled = false
+}
+
+async function updateLeadStatus() {
+  if (!activeThread || !activeCompany) return
+  const status = document.getElementById('inbox-lead-status').value
+  await sb.from('leads').update({ status }).eq('company_id', activeCompany.id).eq('phone', activeThread.phone)
+}
+
+async function markAllRead() {
+  if (!activeCompany) return
+  await sb.from('wa_messages').update({ read_at: new Date().toISOString() })
+    .eq('company_id', activeCompany.id).is('read_at', null)
+  allThreads.forEach(t => { t.unread = false })
+  updateInboxBadge()
+  renderInboxThreads(allThreads)
+}
+
+function updateInboxBadge() {
+  const unread = allThreads.filter(t => t.unread).length
+  const badge  = document.getElementById('inbox-badge')
+  if (!badge) return
+  if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline' }
+  else badge.style.display = 'none'
+}
+
+// ============================================================
+// START
+// ============================================================
+init()
+</script>
+</body>
+</html>
