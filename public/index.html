@@ -7,7 +7,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://connect.facebook.net/en_US/sdk.js"></script>
+<script>
+window.fbAsyncInit = function() {
+  FB.init({ appId: '2597272727395169', autoLogAppEvents: true, xfbml: true, version: 'v19.0' })
+}
+</script>
+<script async defer crossorigin="anonymous" src="https://connect.facebook.net/pt_PT/sdk.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -2579,11 +2584,6 @@ function openNewTemplateModalClient() {
 // WHATSAPP ADMIN — EMBEDDED SIGNUP + TEMPLATES
 // ============================================================
 const META_APP_ID = '2597272727395169'
-
-// Inicializar Facebook SDK
-window.fbAsyncInit = function() {
-  FB.init({ appId: META_APP_ID, autoLogAppEvents: true, xfbml: true, version: 'v19.0' })
-}
 
 function switchAdminTab(name, btn) {
   document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'))
