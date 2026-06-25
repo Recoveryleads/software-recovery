@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://connect.facebook.net/en_US/sdk.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -537,66 +538,68 @@ table.leads-table tr:hover td{background:#fafafa}
 
       <!-- WHATSAPP -->
       <div class="admin-section" id="admin-whatsapp">
+
+        <!-- Selecionar empresa -->
         <div class="admin-card">
-          <div class="admin-card-title">Configuração WhatsApp por Empresa</div>
-          <div style="margin-bottom:16px">
-            <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Empresa</div>
-            <select id="wa-company-select" onchange="loadWaConfig()" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;min-width:240px"></select>
+          <div class="admin-card-title">Empresa</div>
+          <select id="wa-company-select" onchange="loadWaConfig()" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif;min-width:260px"></select>
+        </div>
+
+        <!-- Estado da ligação + botão conectar -->
+        <div class="admin-card">
+          <div class="admin-card-title">Conta WhatsApp Business</div>
+          <div id="wa-connection-status" style="margin-bottom:20px">
+            <div style="font-size:13px;color:var(--gray)">A carregar...</div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-            <div>
-              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Phone Number ID <span style="color:var(--red)">*</span></div>
-              <input type="text" id="wa-phone-id" placeholder="Ex: 123456789012345"
-                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
-              <div style="font-size:11px;color:var(--gray);margin-top:4px">Meta Business Suite → WhatsApp → Phone Numbers</div>
+          <button onclick="launchEmbeddedSignup()" id="btn-wa-connect"
+            style="background:#1877F2;color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;display:flex;align-items:center;gap:10px">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>
+            Conectar com Facebook / Meta
+          </button>
+          <div style="font-size:12px;color:var(--gray);margin-top:10px">O cliente faz login na Meta e autoriza o acesso — os dados são guardados automaticamente.</div>
+          <div id="wa-connect-msg" style="font-size:13px;margin-top:12px;min-height:18px"></div>
+        </div>
+
+        <!-- Detalhes da conta (aparece depois de conectar) -->
+        <div class="admin-card" id="wa-account-details" style="display:none">
+          <div class="admin-card-title">Detalhes da Conta</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px" id="wa-account-grid"></div>
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+            <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Webhook Verify Token</div>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="wa-verify-token" placeholder="Ex: recovery_secret_2026"
+                style="flex:1;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+              <button onclick="saveVerifyToken()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Guardar</button>
             </div>
-            <div>
-              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">WABA ID <span style="color:var(--red)">*</span></div>
-              <input type="text" id="wa-waba-id" placeholder="Ex: 987654321098765"
-                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
-              <div style="font-size:11px;color:var(--gray);margin-top:4px">WhatsApp Business Account ID</div>
-            </div>
-            <div style="grid-column:1/-1">
-              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Access Token (Permanente) <span style="color:var(--red)">*</span></div>
-              <input type="password" id="wa-token" placeholder="EAAxxxxxxx..."
-                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
-              <div style="font-size:11px;color:var(--gray);margin-top:4px">Token gerado no Meta Developer Console (System User com role Admin)</div>
-            </div>
-            <div>
-              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Webhook Verify Token</div>
-              <input type="text" id="wa-verify-token" placeholder="Token secreto para verificar webhook"
-                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
-              <div style="font-size:11px;color:var(--gray);margin-top:4px">Podes inventar — ex: recovery_secret_2024</div>
-            </div>
-            <div>
-              <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Número de Telefone</div>
-              <input type="text" id="wa-phone-number" placeholder="Ex: +351912345678"
-                style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
-            </div>
+            <div style="font-size:11px;color:var(--gray);margin-top:4px">Necessário para verificar o webhook na Meta. Podes inventar qualquer texto.</div>
           </div>
-          <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
-            <button onclick="saveWaConfig()" style="background:var(--navy);color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Guardar</button>
-            <button onclick="testWaConnection()" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Testar Ligação</button>
-            <span id="wa-save-msg" style="font-size:13px;min-height:18px"></span>
+          <div id="wa-save-msg" style="font-size:13px;margin-top:8px;min-height:18px"></div>
+        </div>
+
+        <!-- Webhook URL -->
+        <div class="admin-card">
+          <div class="admin-card-title">Webhook URL</div>
+          <div style="font-size:13px;color:var(--gray);margin-bottom:12px">Configura este URL no Meta Developer Console → WhatsApp → Configuration → Webhook.</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <code id="wa-webhook-url" style="flex:1;font-size:12px;background:var(--light);padding:10px 14px;border-radius:8px;color:#555;word-break:break-all"></code>
+            <button onclick="copyWaWebhookUrl()" style="background:#111;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;white-space:nowrap">Copiar</button>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">messages</span>
+            <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">message_deliveries</span>
+            <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">message_reads</span>
+            <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">messaging_optouts</span>
           </div>
         </div>
 
+        <!-- Templates -->
         <div class="admin-card">
-          <div class="admin-card-title">Webhook URL</div>
-          <div style="font-size:13px;color:var(--gray);margin-bottom:12px">Configura este URL no Meta Developer Console → Webhooks para receber mensagens e status de entrega.</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <code id="wa-webhook-url" style="flex:1;font-size:12px;background:var(--light);padding:10px 14px;border-radius:8px;color:#555;word-break:break-all">${SUPABASE_URL}/functions/v1/whatsapp-webhook</code>
-            <button onclick="copyWaWebhookUrl()" style="background:#111;color:#fff;border:none;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;white-space:nowrap">Copiar</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div class="admin-card-title" style="margin-bottom:0">Templates de Mensagem</div>
+            <button onclick="openNewTemplateModal()" style="background:var(--gold);color:var(--navy);border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:800;font-family:Barlow,sans-serif;cursor:pointer">+ Novo Template</button>
           </div>
-          <div style="margin-top:16px">
-            <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:8px">Eventos a subscrever no webhook Meta:</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap">
-              <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">messages</span>
-              <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">message_deliveries</span>
-              <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">message_reads</span>
-              <span style="background:#D1FAE5;color:#065F46;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px">messaging_optouts</span>
-            </div>
-          </div>
+          <button onclick="loadTemplates()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;color:var(--gray);margin-bottom:16px">↻ Actualizar</button>
+          <div id="templates-list"><div style="font-size:13px;color:var(--gray)">Seleciona uma empresa com WhatsApp configurado.</div></div>
         </div>
       </div>
 
@@ -2330,50 +2333,120 @@ async function runSync() {
 }
 
 // ============================================================
-// WHATSAPP ADMIN CONFIG
+// WHATSAPP ADMIN — EMBEDDED SIGNUP + TEMPLATES
 // ============================================================
+const META_APP_ID = '2597272727395169'
+
+// Inicializar Facebook SDK
+window.fbAsyncInit = function() {
+  FB.init({ appId: META_APP_ID, autoLogAppEvents: true, xfbml: true, version: 'v19.0' })
+}
+
+function switchAdminTab(name, btn) {
+  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'))
+  document.getElementById(`admin-${name}`).classList.add('active')
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'))
+  btn.classList.add('active')
+  if (name === 'stages')   loadAdminStages()
+  if (name === 'billing')  loadAdminBilling()
+  if (name === 'whatsapp') loadAdminWhatsapp()
+}
+
+async function loadAdminWhatsapp() {
+  const sel = document.getElementById('wa-company-select')
+  if (!sel) return
+  const { data } = await sb.from('companies').select('id,name').order('name')
+  sel.innerHTML = (data || []).map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('')
+  document.getElementById('wa-webhook-url').textContent = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`
+  await loadWaConfig()
+}
+
 async function loadWaConfig() {
   const companyId = document.getElementById('wa-company-select')?.value
   if (!companyId) return
-  const { data } = await sb.from('companies').select('wa_phone_id,wa_waba_id,wa_token,wa_verify_token,wa_phone_number').eq('id', companyId).single()
-  if (!data) return
-  document.getElementById('wa-phone-id').value      = data.wa_phone_id || ''
-  document.getElementById('wa-waba-id').value       = data.wa_waba_id || ''
-  document.getElementById('wa-token').value         = data.wa_token || ''
-  document.getElementById('wa-verify-token').value  = data.wa_verify_token || ''
-  document.getElementById('wa-phone-number').value  = data.wa_phone_number || ''
+
+  const { data } = await sb.from('companies')
+    .select('wa_phone_id,wa_waba_id,wa_phone_number,wa_verified_name,wa_quality,wa_verify_token')
+    .eq('id', companyId).single()
+
+  const statusEl  = document.getElementById('wa-connection-status')
+  const detailsEl = document.getElementById('wa-account-details')
+
+  if (data?.wa_phone_id && data?.wa_waba_id) {
+    // Conta conectada
+    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--green)"></div><span style="font-size:14px;font-weight:700;color:var(--green)">Conta conectada</span></div>`
+    detailsEl.style.display = 'block'
+    document.getElementById('wa-account-grid').innerHTML = `
+      <div style="background:var(--light);border-radius:8px;padding:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Nome Verificado</div>
+        <div style="font-size:15px;font-weight:700">${escHtml(data.wa_verified_name || '—')}</div>
+      </div>
+      <div style="background:var(--light);border-radius:8px;padding:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Número</div>
+        <div style="font-size:15px;font-weight:700">${escHtml(data.wa_phone_number || '—')}</div>
+      </div>
+      <div style="background:var(--light);border-radius:8px;padding:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Phone Number ID</div>
+        <div style="font-size:12px;font-family:monospace;color:var(--gray)">${escHtml(data.wa_phone_id)}</div>
+      </div>
+      <div style="background:var(--light);border-radius:8px;padding:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:4px">Qualidade</div>
+        <div style="font-size:15px;font-weight:700;color:${data.wa_quality === 'GREEN' ? 'var(--green)' : data.wa_quality === 'YELLOW' ? 'var(--yellow)' : 'var(--red)'}">${data.wa_quality || '—'}</div>
+      </div>
+    `
+    document.getElementById('wa-verify-token').value = data.wa_verify_token || ''
+    await loadTemplates()
+  } else {
+    statusEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:var(--gray)"></div><span style="font-size:14px;color:var(--gray)">Não conectado</span></div>`
+    detailsEl.style.display = 'none'
+    document.getElementById('templates-list').innerHTML = '<div style="font-size:13px;color:var(--gray)">Conecta uma conta WhatsApp primeiro.</div>'
+  }
 }
 
-async function saveWaConfig() {
+function launchEmbeddedSignup() {
+  const companyId = document.getElementById('wa-company-select')?.value
+  if (!companyId) { alert('Selecciona uma empresa primeiro'); return }
+
+  FB.login(function(response) {
+    if (response.authResponse) {
+      const code        = response.authResponse.code
+      const redirectUri = window.location.origin + window.location.pathname
+      const msg         = document.getElementById('wa-connect-msg')
+      msg.style.color   = 'var(--gray)'; msg.textContent = 'A conectar conta Meta...'
+
+      fetch(`${SUPABASE_URL}/functions/v1/meta-connect`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'exchange_code', code, company_id: companyId, redirect_uri: redirectUri })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          msg.style.color = 'var(--red)'; msg.textContent = 'Erro: ' + data.error
+        } else {
+          msg.style.color = 'var(--green)'
+          msg.textContent = `✓ Conectado! ${data.verified_name} (${data.phone_number})`
+          loadWaConfig()
+        }
+      })
+      .catch(() => { msg.style.color = 'var(--red)'; msg.textContent = 'Erro de ligação' })
+    }
+  }, {
+    scope: 'whatsapp_business_management,whatsapp_business_messaging,business_management',
+    response_type: 'code',
+    override_default_response_type: true,
+    extras: { feature: 'whatsapp_embedded_signup', setup: {} }
+  })
+}
+
+async function saveVerifyToken() {
   const companyId = document.getElementById('wa-company-select')?.value
   if (!companyId) return
+  const token = document.getElementById('wa-verify-token').value.trim()
+  await sb.from('companies').update({ wa_verify_token: token }).eq('id', companyId)
   const msg = document.getElementById('wa-save-msg')
-  await sb.from('companies').update({
-    wa_phone_id:     document.getElementById('wa-phone-id').value.trim(),
-    wa_waba_id:      document.getElementById('wa-waba-id').value.trim(),
-    wa_token:        document.getElementById('wa-token').value.trim(),
-    wa_verify_token: document.getElementById('wa-verify-token').value.trim(),
-    wa_phone_number: document.getElementById('wa-phone-number').value.trim(),
-  }).eq('id', companyId)
   msg.style.color = 'var(--green)'; msg.textContent = '✓ Guardado'
-  setTimeout(() => { msg.textContent = '' }, 2500)
-}
-
-async function testWaConnection() {
-  const companyId = document.getElementById('wa-company-select')?.value
-  if (!companyId) return
-  const msg = document.getElementById('wa-save-msg')
-  msg.style.color = 'var(--gray)'; msg.textContent = 'A testar...'
-  try {
-    const res  = await fetch(`${SUPABASE_URL}/functions/v1/whatsapp-send`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ company_id: companyId, action: 'test' })
-    })
-    const data = await res.json()
-    if (data.ok) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Ligação OK — ' + (data.display_phone || '') }
-    else { msg.style.color = 'var(--red)'; msg.textContent = 'Erro: ' + (data.error || 'Falha') }
-  } catch(e) { msg.style.color = 'var(--red)'; msg.textContent = 'Erro de ligação' }
+  setTimeout(() => { msg.textContent = '' }, 2000)
 }
 
 function copyWaWebhookUrl() {
@@ -2384,26 +2457,175 @@ function copyWaWebhookUrl() {
   })
 }
 
-// Carregar empresas na aba WhatsApp quando se abre
-const _origSwitchAdminTab = switchAdminTab
-function switchAdminTab(name, btn) {
-  document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'))
-  document.getElementById(`admin-${name}`).classList.add('active')
-  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'))
-  btn.classList.add('active')
-  if (name === 'stages')    loadAdminStages()
-  if (name === 'billing')   loadAdminBilling()
-  if (name === 'whatsapp')  loadAdminWhatsapp()
+// ── TEMPLATES
+async function loadTemplates() {
+  const companyId = document.getElementById('wa-company-select')?.value
+  if (!companyId) return
+  const container = document.getElementById('templates-list')
+  container.innerHTML = '<div style="font-size:13px;color:var(--gray)">A carregar templates...</div>'
+
+  const res  = await fetch(`${SUPABASE_URL}/functions/v1/meta-templates`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'list', company_id: companyId })
+  })
+  const data = await res.json()
+
+  if (data.error) { container.innerHTML = `<div style="color:var(--red);font-size:13px">Erro: ${escHtml(data.error)}</div>`; return }
+
+  const templates = data.templates || []
+  if (!templates.length) { container.innerHTML = '<div style="font-size:13px;color:var(--gray)">Nenhum template criado ainda.</div>'; return }
+
+  const statusIcon  = { APPROVED: '✅', PENDING: '⏳', REJECTED: '❌', PAUSED: '⏸' }
+  const statusColor = { APPROVED: 'var(--green)', PENDING: 'var(--yellow)', REJECTED: 'var(--red)', PAUSED: 'var(--gray)' }
+  const categoryLabel = { MARKETING: 'Marketing', UTILITY: 'Utilidade', AUTHENTICATION: 'Autenticação' }
+
+  container.innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Nome</th>
+        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Categoria</th>
+        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Idioma</th>
+        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:700;color:var(--gray);text-transform:uppercase">Estado</th>
+        <th style="padding:8px 12px"></th>
+      </tr></thead>
+      <tbody>
+        ${templates.map(t => `
+          <tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:10px 12px;font-size:13px;font-weight:700;font-family:monospace">${escHtml(t.name)}</td>
+            <td style="padding:10px 12px;font-size:12px;color:var(--gray)">${categoryLabel[t.category] || t.category}</td>
+            <td style="padding:10px 12px;font-size:12px;color:var(--gray)">${escHtml(t.language)}</td>
+            <td style="padding:10px 12px">
+              <span style="font-size:13px;font-weight:700;color:${statusColor[t.status] || 'var(--gray)'}">
+                ${statusIcon[t.status] || ''} ${t.status}
+              </span>
+              ${t.rejected_reason ? `<div style="font-size:11px;color:var(--red);margin-top:2px">${escHtml(t.rejected_reason)}</div>` : ''}
+            </td>
+            <td style="padding:10px 12px;text-align:right">
+              <button onclick="deleteTemplate('${escHtml(t.name)}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`
 }
 
-async function loadAdminWhatsapp() {
-  const sel = document.getElementById('wa-company-select')
-  if (!sel) return
-  const { data } = await sb.from('companies').select('id,name').order('name')
-  sel.innerHTML = (data || []).map(c => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('')
-  await loadWaConfig()
-  // Mostrar URL do webhook
-  document.getElementById('wa-webhook-url').textContent = `${SUPABASE_URL}/functions/v1/whatsapp-webhook`
+async function deleteTemplate(name) {
+  if (!confirm(`Apagar o template "${name}"?`)) return
+  const companyId = document.getElementById('wa-company-select')?.value
+  await fetch(`${SUPABASE_URL}/functions/v1/meta-templates`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'delete', company_id: companyId, template: { name } })
+  })
+  await loadTemplates()
+}
+
+function openNewTemplateModal() {
+  const companyId = document.getElementById('wa-company-select')?.value
+  if (!companyId) { alert('Selecciona uma empresa primeiro'); return }
+
+  document.getElementById('modal-content').innerHTML = `
+    <div class="modal-header">
+      <div class="modal-title">Novo Template de Mensagem</div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <div style="display:grid;gap:14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Nome do Template <span style="color:var(--red)">*</span></div>
+          <input type="text" id="tpl-name" placeholder="ex: reativacao_clientes"
+            style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif"
+            oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'')">
+          <div style="font-size:11px;color:var(--gray);margin-top:4px">Apenas letras minúsculas, números e underscore</div>
+        </div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Categoria <span style="color:var(--red)">*</span></div>
+          <select id="tpl-category" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+            <option value="MARKETING">Marketing</option>
+            <option value="UTILITY">Utilidade</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Idioma</div>
+        <select id="tpl-lang" style="border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+          <option value="pt_PT">Português (PT)</option>
+          <option value="pt_BR">Português (BR)</option>
+          <option value="en_US">Inglês (US)</option>
+          <option value="es">Espanhol</option>
+        </select>
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Texto da Mensagem <span style="color:var(--red)">*</span></div>
+        <textarea id="tpl-body" rows="5" placeholder="Olá {{1}}, temos uma proposta especial para si. Tem interesse em saber mais?"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:13px;font-family:Barlow,sans-serif;outline:none;resize:vertical;line-height:1.6"></textarea>
+        <div style="font-size:11px;color:var(--gray);margin-top:4px">Usa <strong>{{1}}</strong>, <strong>{{2}}</strong> etc. para variáveis (ex: nome do cliente)</div>
+      </div>
+
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--gray);text-transform:uppercase;margin-bottom:6px">Rodapé (opcional)</div>
+        <input type="text" id="tpl-footer" placeholder="Ex: Para parar de receber mensagens, responde STOP"
+          style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:13px;outline:none;font-family:Barlow,sans-serif">
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+      <button onclick="closeModal()" style="background:transparent;border:1px solid var(--border);border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer;color:var(--gray)">Cancelar</button>
+      <button onclick="submitTemplate('${companyId}')" style="background:#7C3AED;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;font-family:Barlow,sans-serif;cursor:pointer">Submeter à Meta</button>
+    </div>
+    <div id="tpl-submit-msg" style="font-size:13px;margin-top:10px;min-height:18px"></div>
+  `
+  document.getElementById('modal').style.display = 'flex'
+}
+
+async function submitTemplate(companyId) {
+  const name     = document.getElementById('tpl-name').value.trim()
+  const category = document.getElementById('tpl-category').value
+  const lang     = document.getElementById('tpl-lang').value
+  const bodyText = document.getElementById('tpl-body').value.trim()
+  const footer   = document.getElementById('tpl-footer').value.trim()
+  const msg      = document.getElementById('tpl-submit-msg')
+
+  if (!name || !bodyText) { msg.style.color='var(--red)'; msg.textContent='Preenche o nome e o texto.'; return }
+
+  // Detectar variáveis no texto ({{1}}, {{2}}, etc.)
+  const vars    = [...bodyText.matchAll(/\{\{(\d+)\}\}/g)].map(m => parseInt(m[1]))
+  const maxVar  = vars.length ? Math.max(...vars) : 0
+  const examples = Array.from({ length: maxVar }, (_, i) => `Exemplo${i + 1}`)
+
+  const components = [{
+    type: 'BODY',
+    text: bodyText,
+    ...(maxVar > 0 ? { example: { body_text: [examples] } } : {})
+  }]
+
+  if (footer) components.push({ type: 'FOOTER', text: footer })
+
+  const template = {
+    name,
+    category,
+    language: lang,
+    components
+  }
+
+  msg.style.color = 'var(--gray)'; msg.textContent = 'A submeter à Meta...'
+
+  const res  = await fetch(`${SUPABASE_URL}/functions/v1/meta-templates`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'create', company_id: companyId, template })
+  })
+  const data = await res.json()
+
+  if (data.error) { msg.style.color='var(--red)'; msg.textContent='Erro: '+data.error; return }
+
+  msg.style.color = 'var(--green)'
+  msg.textContent = `✓ Template submetido! Estado: ${data.status || 'PENDING'}. A Meta demora 24-48h a aprovar.`
+  setTimeout(() => { closeModal(); loadTemplates() }, 2500)
 }
 
 // ============================================================
